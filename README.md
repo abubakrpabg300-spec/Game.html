@@ -1,0 +1,324 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <title>MINER ZZ</title>
+    <style>
+        * { box-sizing: border-box; user-select: none; -webkit-user-select: none; margin: 0; padding: 0; }
+        body {
+            background: radial-gradient(circle, #161233 0%, #090514 100%);
+            color: #ffffff;
+            font-family: 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+            height: 100vh;
+            overflow: hidden;
+        }
+        .header {
+            padding: 20px;
+            text-align: center;
+            background: rgba(255, 255, 255, 0.03);
+            border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+        }
+        .score-box {
+            font-size: 36px;
+            font-weight: 800;
+            color: #00f0ff;
+            text-shadow: 0 0 15px rgba(0, 240, 255, 0.5);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+        }
+        .zz-logo {
+            width: 40px;
+            height: 40px;
+            background: linear-gradient(135deg, #ffd700, #ff8c00);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 900;
+            color: #221200;
+            font-size: 18px;
+            box-shadow: 0 0 10px #ff8c00;
+        }
+        .content {
+            height: 70vh;
+            overflow-y: auto;
+            padding: 20px;
+            display: none;
+        }
+        .content.active { display: flex; flex-direction: column; align-items: center; }
+        .miner-screen { justify-content: space-around !important; }
+        .click-area {
+            position: relative;
+            width: 200px;
+            height: 200px;
+            background: radial-gradient(circle, #1a234d 0%, #0a0d24 100%);
+            border: 6px solid #00f0ff;
+            border-radius: 50%;
+            box-shadow: 0 0 30px rgba(0, 240, 255, 0.3);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 80px;
+            cursor: pointer;
+            transition: transform 0.05s ease;
+            margin: auto;
+        }
+        .click-area:active { transform: scale(0.95); }
+        .upgrade-card {
+            width: 100%;
+            max-width: 320px;
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 12px;
+            padding: 15px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-top: 20px;
+        }
+        .up-btn {
+            background: #00ffcc;
+            color: #000;
+            border: none;
+            padding: 8px 16px;
+            border-radius: 8px;
+            font-weight: bold;
+            cursor: pointer;
+        }
+        .task-list { width: 100%; max-width: 340px; display: flex; flex-direction: column; gap: 12px; }
+        .task-item {
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 12px;
+            padding: 15px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-left: 4px solid #ffd700;
+        }
+        .task-link { color: #00f0ff; text-decoration: none; font-weight: bold; }
+        .ref-box { text-align: center; background: rgba(255, 255, 255, 0.03); padding: 20px; border-radius: 16px; width: 100%; max-width: 320px; }
+        .ref-input {
+            width: 100%;
+            padding: 10px;
+            background: #0d081f;
+            border: 1px solid #00f0ff;
+            color: #fff;
+            border-radius: 8px;
+            text-align: center;
+            margin: 15px 0;
+        }
+        .balance-card {
+            background: linear-gradient(135deg, #1e1b4b 0%, #111827 100%);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            padding: 30px;
+            border-radius: 20px;
+            text-align: center;
+            width: 100%;
+            max-width: 320px;
+            box-shadow: 0 10px 25px rgba(0,0,0,0.5);
+        }
+        .action-btns { display: flex; gap: 10px; width: 100%; margin-top: 20px; }
+        .btn-action { flex: 1; padding: 12px; border-radius: 10px; border: none; font-weight: bold; cursor: pointer; }
+        .btn-dep { background: #00ff66; color: #000; }
+        .btn-with { background: #ff3366; color: #fff; }
+        .admin-section { width: 100%; max-width: 320px; background: rgba(255, 0, 85, 0.1); border: 1px solid #ff0055; border-radius: 12px; padding: 15px; margin-top: 15px; }
+        .admin-input { width: 100%; padding: 8px; margin: 5px 0; background: #000; color: #fff; border: 1px solid #ff0055; border-radius: 6px; }
+        .nav-bar {
+            height: 75px;
+            background: #0c081d;
+            border-top: 1px solid rgba(255, 255, 255, 0.1);
+            display: flex;
+            justify-content: space-around;
+            align-items: center;
+        }
+        .nav-item {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            color: #888;
+            font-size: 11px;
+            cursor: pointer;
+            flex: 1;
+            padding: 10px 0;
+        }
+        .nav-item.active { color: #00f0ff; font-weight: bold; }
+        .nav-icon { font-size: 22px; margin-bottom: 4px; }
+        .plus-one {
+            position: absolute; font-size: 26px; font-weight: 900; color: #00ffcc;
+            text-shadow: 0 0 8px #00ffcc; pointer-events: none;
+            animation: floatUp 0.6s ease-out forwards;
+        }
+        @keyframes floatUp {
+            0% { opacity: 1; transform: translateY(0); }
+            100% { opacity: 0; transform: translateY(-80px); }
+        }
+    </style>
+</head>
+<body>
+
+    <div class="header">
+        <div class="score-box">
+            <div class="zz-logo">ZZ</div>
+            <span id="globalScore">0</span>
+        </div>
+    </div>
+
+    <!-- MAINER -->
+    <div id="screen-miner" class="content active">
+        <div class="click-area" id="clickTarget">⛏️</div>
+        <div class="upgrade-card">
+            <div>
+                <div style="font-weight: bold;">Скорость Майнера</div>
+                <div style="font-size: 12px; color: #aaa;">Уровень: <span id="minerLvl">1</span></div>
+            </div>
+            <button class="up-btn" id="btnUpgrade">Апгрейд (<span id="upCost">100</span>)</button>
+        </div>
+    </div>
+
+    <!-- TASKS -->
+    <div id="screen-tasks" class="content">
+        <h2 style="margin-bottom: 20px;">Задания сообщества</h2>
+        <div class="task-list" id="tasksContainer"></div>
+    </div>
+
+    <!-- REF -->
+    <div id="screen-referrals" class="content">
+        <div class="ref-box">
+            <h3>Пригласи друзей</h3>
+            <input type="text" class="ref-input" id="refLinkInput" readonly value="https://t.me/miner_zz_bot">
+            <button class="up-btn" style="width: 100%;" onclick="alert('Ссылка скопирована!')">Копировать</button>
+        </div>
+    </div>
+
+    <!-- BALANCE -->
+    <div id="screen-balance" class="content">
+        <div class="balance-card">
+            <div style="font-size: 14px; color: #aaa;">Твой кошелек</div>
+            <div style="font-size: 32px; font-weight: bold; margin: 15px 0; color: #ffd700;" id="walletScore">0 ZZ</div>
+            <div class="action-btns">
+                <button class="btn-action btn-dep" onclick="alert('Технические работы')">Ввод</button>
+                <button class="btn-action btn-with" onclick="alert('Вывод от 500,000 ZZ')">Вывод</button>
+            </div>
+        </div>
+
+        <div class="admin-section" id="adminPanel" style="display: none;">
+            <h4 style="color: #ff0055; margin-bottom: 10px;">🛡️ Админка</h4>
+            <input type="number" class="admin-input" id="admAmount" placeholder="Количество монет">
+            <button class="up-btn" style="background:#ff0055; color:#fff; width:100%;" id="admAdd">Добавить монет</button>
+        </div>
+    </div>
+
+    <div class="nav-bar">
+        <div class="nav-item active" onclick="switchScreen('miner', this)">
+            <div class="nav-icon">⛏️</div>
+            <div>Майнер</div>
+        </div>
+        <div class="nav-item" onclick="switchScreen('tasks', this)">
+            <div class="nav-icon">📋</div>
+            <div>Задания</div>
+        </div>
+        <div class="nav-item" onclick="switchScreen('referrals', this)">
+            <div class="nav-icon">👥</div>
+            <div>Рефералы</div>
+        </div>
+        <div class="nav-item" onclick="switchScreen('balance', this)">
+            <div class="nav-icon">💰</div>
+            <div>Баланс</div>
+        </div>
+    </div>
+
+    <script>
+        const ADMIN_TG_ID = "8684827145";
+        let userTgId = ADMIN_TG_ID; 
+
+        let coins = parseInt(localStorage.getItem('zz_coins')) || 0;
+        let level = parseInt(localStorage.getItem('zz_lvl')) || 1;
+        let upCost = parseInt(localStorage.getItem('zz_cost')) || 100;
+
+        let defaultTasks = [
+            { id: 1, title: "Подпишись на канал", url: "https://t.me/", reward: 2500, done: false }
+        ];
+        let tasks = JSON.parse(localStorage.getItem('zz_tasks')) || defaultTasks;
+
+        function updateUI() {
+            document.getElementById('globalScore').innerText = coins.toLocaleString();
+            document.getElementById('walletScore').innerText = coins.toLocaleString() + " ZZ";
+            document.getElementById('minerLvl').innerText = level;
+            document.getElementById('upCost').innerText = upCost;
+            localStorage.setItem('zz_coins', coins);
+            localStorage.setItem('zz_lvl', level);
+            localStorage.setItem('zz_cost', upCost);
+            renderTasks();
+        }
+
+        function switchScreen(screenId, element) {
+            document.querySelectorAll('.content').forEach(s => s.style.display = 'none');
+            document.querySelectorAll('.nav-item').forEach(i => i.classList.remove('active'));
+            document.getElementById('screen-' + screenId).style.display = 'flex';
+            element.classList.add('active');
+
+            if (screenId === 'balance' && userTgId === ADMIN_TG_ID) {
+                document.getElementById('adminPanel').style.display = 'block';
+            }
+        }
+
+        document.getElementById('clickTarget').addEventListener('click', (e) => {
+            coins += level;
+            updateUI();
+        });
+
+        document.getElementById('btnUpgrade').addEventListener('click', () => {
+            if (coins >= upCost) {
+                coins -= upCost;
+                level++;
+                upCost = Math.floor(upCost * 2.5);
+                updateUI();
+            } else {
+                alert("Недостаточно монет!");
+            }
+        });
+
+        function renderTasks() {
+            const container = document.getElementById('tasksContainer');
+            container.innerHTML = '';
+            tasks.forEach((task, index) => {
+                const item = document.createElement('div');
+                item.className = 'task-item';
+                item.innerHTML = `
+                    <div>
+                        <div style="font-weight:bold;">${task.title}</div>
+                        <div style="color:#00ffcc;">+${task.reward} ZZ</div>
+                    </div>
+                    <button class="up-btn" onclick="claimTask(${index})">Проверить</button>
+                `;
+                container.appendChild(item);
+            });
+        }
+
+        window.claimTask = function(index) {
+            if (!tasks[index].done) {
+                tasks[index].done = true;
+                coins += tasks[index].reward;
+                updateUI();
+                alert("Награда получена!");
+            }
+        };
+
+        document.getElementById('admAdd').addEventListener('click', () => {
+            let val = parseInt(document.getElementById('admAmount').value) || 0;
+            coins += val;
+            updateUI();
+            alert("Добавлено!");
+        });
+
+        updateUI();
+    </script>
+</body>
+</html>
+
