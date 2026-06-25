@@ -1,0 +1,128 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <title>Ферма Процветания</title>
+    <style>
+        body { font-family: sans-serif; background: #0f172a; color: white; margin: 0; padding-bottom: 80px; }
+        .section { display: none; padding: 20px; text-align: center; }
+        .active { display: block; }
+        nav { position: fixed; bottom: 0; width: 100%; background: #1e293b; display: grid; grid-template-columns: repeat(7, 1fr); padding: 10px 0; font-size: 8px; text-align: center; cursor: pointer; }
+        button { padding: 10px; margin: 5px; cursor: pointer; border-radius: 8px; border: none; background: #3b82f6; color: white; }
+        .click-btn { width: 150px; height: 150px; border-radius: 50%; background: #ef4444; font-size: 20px; }
+    </style>
+</head>
+<body>
+
+    <div id="section-1" class="section active">
+        <h1>Ферма</h1>
+        <h2 id="balance">Монет: 0</h2>
+        <p>Сила: <span id="stamina">100</span>/<span id="max-stamina">100</span></p>
+        <button class="click-btn" onclick="clickAction()">КЛИК</button>
+    </div>
+
+    <div id="section-2" class="section">
+        <h1>Продвижение</h1>
+        <button onclick="buyMaxStamina(1.0, 500)">1 TON: +500 вместимости</button><br>
+        <button onclick="buyMaxStamina(1.8, 1000)">1.8 TON: +1000 вместимости</button><br>
+        <button onclick="buyMaxStamina(3.0, 2000)">3 TON: +2000 вместимости</button>
+    </div>
+
+    <div id="section-3" class="section"><h1>Задания</h1></div>
+    <div id="section-4" class="section"><h1>Рефералы</h1></div>
+    <div id="section-5" class="section">
+        <h1>Биржа</h1>
+        <p>Цена 1 монеты: <span id="coin-price">0.001</span> TON</p>
+        <button onclick="trade('buy')">Купить</button>
+        <button onclick="trade('sell')">Продать</button>
+    </div>
+
+    <div id="section-6" class="section">
+        <h1>Профиль</h1>
+        <p>Ваш ID: <span id="user-id">8684827145</span></p>
+        <div style="border:1px solid #3b82f6; padding:10px; margin:10px;">
+            <h3>Пополнение</h3>
+            <p>Отправьте TON на адрес:</p>
+            <p style="word-break: break-all; font-weight: bold; color: #fbbf24;">UQDmNY1TIMIgnALOpAyJ4_XO2uroUNLFVRwGie5AEwzccaps</p>
+            <p>Мин. сумма: 0.5 TON. <b>Важно:</b> укажите ваш ID в комментарии к переводу!</p>
+        </div>
+        <div style="border:1px solid #ef4444; padding:10px; margin:10px;">
+            <h3>Вывод средств</h3>
+            <p>Минимальный вывод: 0.5 TON</p>
+            <button onclick="requestWithdraw()">Запросить вывод</button>
+        </div>
+    </div>
+
+    <div id="section-7" class="section">
+        <h1>Админка (Admin: 8684827145)</h1>
+        <input id="admin-id" placeholder="ID пользователя"><br>
+        <input id="admin-val" placeholder="Кол-во монет"><br>
+        <button onclick="adminAction('add')">Начислить</button>
+        <button onclick="adminAction('sub')">Списать</button>
+    </div>
+
+    <nav>
+        <div onclick="showSection(1)">Ферма</div>
+        <div onclick="showSection(2)">Бусты</div>
+        <div onclick="showSection(3)">Задания</div>
+        <div onclick="showSection(4)">Друзья</div>
+        <div onclick="showSection(5)">Биржа</div>
+        <div onclick="showSection(6)">Профиль</div>
+        <div onclick="showSection(7)">Админ</div>
+    </nav>
+
+    <script>
+        let data = JSON.parse(localStorage.getItem('farmData')) || { balance: 0, stamina: 100, maxStamina: 100, coinPrice: 0.001 };
+        const ADMIN_ID = "8684827145"; 
+
+        function updateUI() {
+            document.getElementById('balance').innerText = "Монет: " + Math.floor(data.balance);
+            document.getElementById('stamina').innerText = data.stamina;
+            document.getElementById('max-stamina').innerText = data.maxStamina;
+            document.getElementById('coin-price').innerText = data.coinPrice.toFixed(4);
+            localStorage.setItem('farmData', JSON.stringify(data));
+        }
+
+        function clickAction() {
+            if (data.stamina > 0) {
+                data.balance += 1;
+                data.stamina -= 1;
+                updateUI();
+            }
+        }
+
+        function requestWithdraw() {
+            alert("Запрос на вывод отправлен админу. Ожидайте обработки.");
+        }
+
+        function trade(type) {
+            if (type === 'buy') {
+                data.balance += 100;
+                data.coinPrice *= 1.05;
+            } else if (data.balance >= 100) {
+                data.balance -= 100;
+                data.coinPrice *= 0.95;
+            }
+            updateUI();
+        }
+
+        function adminAction(type) {
+            let val = parseInt(document.getElementById('admin-val').value);
+            if (type === 'add') data.balance += val;
+            else data.balance -= val;
+            updateUI();
+        }
+
+        setInterval(() => {
+            if (data.stamina < data.maxStamina) { data.stamina += 1; updateUI(); }
+        }, 10000);
+
+        function showSection(id) {
+            document.querySelectorAll('.section').forEach(s => s.classList.remove('active'));
+            document.getElementById('section-' + id).classList.add('active');
+        }
+
+        updateUI();
+    </script>
+</body>
+</html>
