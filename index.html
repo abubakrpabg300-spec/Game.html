@@ -1,0 +1,225 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Miner ZZ</title>
+    <style>
+        body { margin: 0; font-family: sans-serif; background-color: #0f0f1a; color: white; user-select: none; }
+        .header { text-align: center; font-size: 24px; font-weight: bold; color: #00ffff; padding: 20px 0; text-shadow: 0 0 10px #00ffff; }
+        .tab-content { display: none; padding: 20px; padding-bottom: 80px; }
+        .active-tab { display: block; }
+        
+        /* Кнопка майнера */
+        .miner-circle { width: 250px; height: 250px; border-radius: 50%; border: 4px solid #00ffff; display: flex; justify-content: center; align-items: center; margin: 50px auto; box-shadow: 0 0 30px rgba(0, 255, 255, 0.5); cursor: pointer; background: radial-gradient(circle, #1a1a2e 0%, #0f0f1a 100%); transition: transform 0.1s; }
+        .miner-circle:active { transform: scale(0.95); }
+        .miner-circle img { width: 120px; }
+
+        /* Карточки и кнопки */
+        .card { background-color: #1a1a2e; border-radius: 15px; padding: 20px; margin-bottom: 15px; }
+        .btn { padding: 12px 20px; border: none; border-radius: 10px; font-weight: bold; font-size: 16px; cursor: pointer; width: 100%; margin-top: 10px; }
+        .btn-green { background-color: #00ff88; color: black; }
+        .btn-red { background-color: #ff3366; color: white; }
+        .btn-blue { background-color: #00d2ff; color: black; }
+        
+        /* Инпуты */
+        input { width: 90%; padding: 10px; margin: 10px 0; border-radius: 5px; border: 1px solid #00ffff; background: transparent; color: white; }
+
+        /* Навигация внизу */
+        .nav { position: fixed; bottom: 0; width: 100%; background-color: #1a1a2e; display: flex; justify-content: space-around; padding: 10px 0; border-top: 1px solid #333; }
+        .nav-item { text-align: center; font-size: 12px; color: gray; cursor: pointer; display: flex; flex-direction: column; align-items: center; width: 20%; }
+        .nav-item.active { color: #00ffff; }
+        .nav-item span { font-size: 20px; margin-bottom: 5px; }
+
+        /* График (имитация) */
+        .chart-box { height: 150px; border-bottom: 2px solid #00ffff; border-left: 2px solid #00ffff; position: relative; margin-top: 20px; }
+        .chart-line { position: absolute; bottom: 0; left: 0; height: 50%; width: 100%; border-top: 3px solid #00ff88; transform: skewY(-10deg); transform-origin: left bottom; }
+    </style>
+</head>
+<body>
+
+    <!-- Общий Баланс наверху -->
+    <div class="header" id="topBalance">0</div>
+
+    <!-- 1. РАЗДЕЛ: МАЙНЕР -->
+    <div id="miner" class="tab-content active-tab">
+        <div class="miner-circle" id="tapBtn">
+            <span style="font-size: 80px;">⛏️</span>
+        </div>
+        <div class="card">
+            <p>Скорость Майнера: Уровень <span id="lvl">1</span></p>
+            <button class="btn btn-green">Апгрейд (Цена: 1000)</button>
+        </div>
+    </div>
+
+    <!-- 2. РАЗДЕЛ: ЗАДАНИЯ -->
+    <div id="tasks" class="tab-content">
+        <h2>Задания</h2>
+        <p style="color: #00ff88;">🔥 За каждого приглашенного реферала ты получаешь 1000 ZZ!</p>
+        <div id="tasksList">
+            <div class="card">
+                <p>Подпишись на канал</p>
+                <p style="color: #00ff88;">+2500 ZZ</p>
+                <button class="btn btn-blue" onclick="checkTask(this, 2500)">Проверить</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- 3. РАЗДЕЛ: РЕФЕРАЛЫ -->
+    <div id="refs" class="tab-content">
+        <h2>Пригласи друзей</h2>
+        <div class="card">
+            <p>Твоя ссылка:</p>
+            <input type="text" value="https://t.me/miner_zz_bot?start=123" readonly id="refLink">
+            <button class="btn btn-green" onclick="copyRef()">Копировать</button>
+            <p style="margin-top: 15px; color: #00ff88;">Награда: 1000 ZZ за друга</p>
+        </div>
+    </div>
+
+    <!-- 4. РАЗДЕЛ: БАЛАНС -->
+    <div id="balance" class="tab-content">
+        <div class="card" style="text-align: center;">
+            <p style="color: gray;">Твой кошелек</p>
+            <h2 style="color: #ffd700;" id="walletBalance">0 ZZ</h2>
+            
+            <button class="btn btn-green" onclick="showListingAlert()">Ввод</button>
+            <button class="btn btn-red" onclick="showListingAlert()">Вывод</button>
+            <p style="color: gray; font-size: 12px; margin-top: 15px;" id="listingText">
+                Функции ввода и вывода станут доступны, когда монета ZZ будет залистена на бирже.
+            </p>
+        </div>
+    </div>
+
+    <!-- 5. РАЗДЕЛ: КУРС МОНЕТЫ (НОВЫЙ) -->
+    <div id="price" class="tab-content">
+        <h2>Курс токена ZZ</h2>
+        <div class="card">
+            <p>1 000 000 ZZ = 1 Gram</p>
+            <h3 style="color: #00ff88;">Твой капитал: <span id="gramValue">0</span> Gram</h3>
+            <p style="font-size: 12px; color: gray;">Цена монеты растет от количества кликов и выполненных заданий игроками!</p>
+            <!-- Имитация графика -->
+            <div class="chart-box">
+                <div class="chart-line"></div>
+            </div>
+            <p style="text-align: right; color: #00ffff; margin-top: 5px;">Рост: +2.4% 🚀</p>
+        </div>
+    </div>
+
+    <!-- 6. РАЗДЕЛ: АДМИН ПАНЕЛЬ (НОВЫЙ) -->
+    <div id="admin" class="tab-content">
+        <h2 style="color: #ff3366;">Панель Администратора</h2>
+        <div class="card">
+            <h3>Управление балансом</h3>
+            <input type="number" id="adminAmount" placeholder="Сумма ZZ">
+            <button class="btn btn-green" onclick="adminAdd()">Начислить всем</button>
+            <button class="btn btn-red" onclick="adminTake()">Снять у всех</button>
+        </div>
+        <div class="card">
+            <h3>Создать задание</h3>
+            <input type="text" id="taskName" placeholder="Название (например: Подписка)">
+            <input type="text" id="taskLink" placeholder="Ссылка (https://t.me/...)">
+            <input type="number" id="taskReward" placeholder="Награда (ZZ)">
+            <button class="btn btn-blue" onclick="adminCreateTask()">Создать</button>
+        </div>
+        <div class="card">
+            <h3>Заявки на вывод</h3>
+            <p style="color: gray;">Пока нет заявок (Ожидание листинга)</p>
+        </div>
+    </div>
+
+    <!-- НАВИГАЦИЯ ВНИЗУ -->
+    <div class="nav">
+        <div class="nav-item active" onclick="openTab('miner', this)"><span>⛏️</span>Майнер</div>
+        <div class="nav-item" onclick="openTab('tasks', this)"><span>📋</span>Задания</div>
+        <div class="nav-item" onclick="openTab('refs', this)"><span>👥</span>Рефы</div>
+        <div class="nav-item" onclick="openTab('balance', this)"><span>💰</span>Баланс</div>
+        <div class="nav-item" onclick="openTab('price', this)"><span>📈</span>Курс</div>
+        <div class="nav-item" onclick="openTab('admin', this)"><span>⚙️</span>Админ</div>
+    </div>
+
+    <script>
+        // Переменные
+        let coins = 386808852018; // Стартовый баланс для красоты (как на скрине)
+        let totalClicks = 0;
+
+        // Обновление цифр на экране
+        function updateUI() {
+            document.getElementById('topBalance').innerText = coins.toLocaleString('ru-RU');
+            document.getElementById('walletBalance').innerText = coins.toLocaleString('ru-RU') + " ZZ";
+            
+            // Расчет Gram (1 млн ZZ = 1 Gram)
+            let grams = (coins / 1000000).toFixed(4);
+            document.getElementById('gramValue').innerText = grams;
+        }
+
+        // Клик по кирке
+        document.getElementById('tapBtn').addEventListener('click', () => {
+            coins += 1;
+            totalClicks += 1; // Увеличиваем стату для роста цены
+            updateUI();
+            
+            // Легкая вибрация телефона при клике (если поддерживает Телеграм/Браузер)
+            if (navigator.vibrate) navigator.vibrate(50);
+        });
+
+        // Переключение вкладок
+        function openTab(tabId, el) {
+            document.querySelectorAll('.tab-content').forEach(tab => tab.classList.remove('active-tab'));
+            document.getElementById(tabId).classList.add('active-tab');
+            
+            document.querySelectorAll('.nav-item').forEach(nav => nav.classList.remove('active'));
+            el.classList.add('active');
+        }
+
+        // Кнопки ввода/вывода
+        function showListingAlert() {
+            alert("Ввод и вывод будут доступны, когда монета будет залистена!");
+        }
+
+        // Копирование рефки
+        function copyRef() {
+            let copyText = document.getElementById("refLink");
+            copyText.select();
+            document.execCommand("copy");
+            alert("Ссылка скопирована!");
+        }
+
+        // Выполнение задания
+        function checkTask(btn, reward) {
+            btn.innerText = "Проверка...";
+            setTimeout(() => {
+                coins += reward;
+                updateUI();
+                btn.innerText = "Выполнено";
+                btn.classList.replace('btn-blue', 'btn-green');
+                btn.disabled = true;
+                alert("Награда " + reward + " ZZ получена!");
+            }, 2000); // 2 секунды имитации проверки
+        }
+
+        // ФУНКЦИИ АДМИНА
+        function adminAdd() {
+            let amount = Number(document.getElementById('adminAmount').value);
+            if(amount > 0) { coins += amount; updateUI(); alert("Начислено всем игрокам: " + amount); }
+        }
+        function adminTake() {
+            let amount = Number(document.getElementById('adminAmount').value);
+            if(amount > 0) { coins -= amount; if(coins < 0) coins = 0; updateUI(); alert("Снято у всех: " + amount); }
+        }
+        function adminCreateTask() {
+            let name = document.getElementById('taskName').value;
+            let reward = document.getElementById('taskReward').value;
+            if(name && reward) {
+                let html = `<div class="card"><p>${name}</p><p style="color: #00ff88;">+${reward} ZZ</p><button class="btn btn-blue" onclick="checkTask(this, ${reward})">Проверить</button></div>`;
+                document.getElementById('tasksList').innerHTML += html;
+                alert("Задание успешно создано!");
+            } else {
+                alert("Заполни название и награду!");
+            }
+        }
+
+        // Инициализация при загрузке
+        updateUI();
+    </script>
+</body>
+</html>
