@@ -1,0 +1,244 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Ферма ZZ</title>
+
+<script src="https://telegram.org/js/telegram-web-app.js"></script>
+
+<style>
+*{margin:0;padding:0;box-sizing:border-box;font-family:Arial;}
+body{background:#0a0a14;color:#fff;font-size:13px;padding-bottom:70px;}
+
+.header{text-align:center;padding:10px;font-size:18px;font-weight:bold;color:#ffd000;}
+
+.card{background:#14142a;margin:10px;padding:10px;border-radius:12px;border:1px solid #2a2a44;}
+
+.balance{display:flex;gap:6px;}
+.box{flex:1;background:#0d0d20;padding:8px;border-radius:10px;text-align:center;}
+.box .val{font-size:16px;font-weight:bold;}
+.zz{color:#ffd000;}
+.ton{color:#00e676;}
+.energy{color:#00e5ff;}
+
+.click{
+width:130px;height:130px;border-radius:50%;
+margin:15px auto;
+background:#1c1c3a;
+border:3px solid #7c3cff;
+display:flex;align-items:center;justify-content:center;
+font-size:16px;font-weight:bold;
+cursor:pointer;
+}
+
+.btn{
+width:100%;
+padding:10px;
+margin-top:6px;
+border:none;
+border-radius:10px;
+background:#7c3cff;
+color:#fff;
+font-weight:bold;
+}
+
+.nav{
+position:fixed;bottom:0;left:0;right:0;
+display:flex;
+background:#111122;
+border-top:1px solid #2a2a44;
+}
+
+.nav div{
+flex:1;
+text-align:center;
+font-size:10px;
+padding:6px;
+color:#aaa;
+cursor:pointer;
+}
+
+.page{display:none;}
+.active{display:block;}
+</style>
+
+</head>
+
+<body>
+
+<div class="header">🌾 Ферма ZZ</div>
+
+<div class="card balance">
+
+<div class="box">
+🪙 ZZ Coin
+<div class="val zz" id="coins">0</div>
+</div>
+
+<div class="box">
+⚡ Энергия
+<div class="val energy" id="energy">100</div>
+</div>
+
+<div class="box">
+⭐ LVL
+<div class="val" id="lvl">1</div>
+</div>
+
+</div>
+
+<!-- HOME -->
+<div id="home" class="page active">
+
+<div class="card" style="text-align:center">
+
+<div class="click" onclick="farm()">
+🚀 СОБРАТЬ
+</div>
+
+<p>XP: <span id="xp">0</span>/100</p>
+
+</div>
+
+<div class="card">
+
+<h3>🎁 Бонус</h3>
+<button class="btn" onclick="bonus()">Получить +500 ZZ</button>
+
+</div>
+
+</div>
+
+<!-- BOOST -->
+<div id="boost" class="page">
+
+<div class="card">
+
+<h3>🚀 Бусты</h3>
+
+<p>Сила: <span id="power">1</span></p>
+
+<button class="btn" onclick="upgrade()">Улучшить (1000 ZZ)</button>
+
+</div>
+
+</div>
+
+<!-- FRIENDS -->
+<div id="friends" class="page">
+
+<div class="card">
+
+<h3>👥 Друзья</h3>
+
+<p>Твоя ссылка:</p>
+<p id="ref"></p>
+
+</div>
+
+</div>
+
+<!-- PROFILE -->
+<div id="profile" class="page">
+
+<div class="card">
+<h3>👤 Профиль</h3>
+<p>ZZ Coin: <span id="pcoins">0</span></p>
+</div>
+
+</div>
+
+<!-- NAV -->
+<div class="nav">
+<div onclick="show('home')">🌾</div>
+<div onclick="show('boost')">🚀</div>
+<div onclick="show('friends')">👥</div>
+<div onclick="show('profile')">👤</div>
+</div>
+
+<script>
+
+let coins = +localStorage.getItem("coins") || 0;
+let energy = +localStorage.getItem("energy") || 100;
+let xp = +localStorage.getItem("xp") || 0;
+let lvl = +localStorage.getItem("lvl") || 1;
+let power = +localStorage.getItem("power") || 1;
+
+function save(){
+localStorage.setItem("coins",coins);
+localStorage.setItem("energy",energy);
+localStorage.setItem("xp",xp);
+localStorage.setItem("lvl",lvl);
+localStorage.setItem("power",power);
+}
+
+function update(){
+
+document.getElementById("coins").innerText = coins;
+document.getElementById("energy").innerText = energy;
+document.getElementById("xp").innerText = xp;
+document.getElementById("lvl").innerText = lvl;
+document.getElementById("power").innerText = power;
+document.getElementById("pcoins").innerText = coins;
+
+}
+
+function farm(){
+
+if(energy <= 0) return;
+
+coins += power;
+xp += 2;
+energy--;
+
+if(xp >= 100){
+lvl++;
+xp = 0;
+alert("🎉 LEVEL UP!");
+}
+
+save(); update();
+}
+
+function bonus(){
+coins += 500;
+save(); update();
+}
+
+function upgrade(){
+
+if(coins >= 1000){
+coins -= 1000;
+power++;
+save(); update();
+}
+
+}
+
+function show(page){
+
+document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
+document.getElementById(page).classList.add('active');
+
+}
+
+setInterval(()=>{
+if(energy < 100){
+energy++;
+save(); update();
+}
+},5000);
+
+function ref(){
+document.getElementById("ref").innerText =
+"t.me/yourbot?start=" + Date.now();
+}
+
+ref();
+update();
+
+</script>
+
+</body>
+</html>
