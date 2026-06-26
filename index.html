@@ -1,0 +1,513 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Ферма Процветания</title>
+    <script src="https://telegram.org/js/telegram-web-app.js"></script>
+    <style>
+        *{margin:0;padding:0;box-sizing:border-box}
+        body{background:#0a0a14;color:#e0e0e0;font-family:-apple-system,BlinkMacSystemFont,sans-serif;font-size:13px;user-select:none}
+        .container{padding:10px 10px 70px}
+        .header{display:flex;justify-content:space-between;align-items:center;margin-bottom:8px}
+        .id-badge{background:#12122a;padding:6px 12px;border-radius:14px;font-size:10px;color:#9ca3af;border:1px solid #1e1e3a}
+        .id-badge span{color:#00e5ff;font-weight:700}
+        .header-btns{display:flex;gap:8px}
+        .header-btn{width:34px;height:34px;border-radius:50%;border:none;font-size:16px;cursor:pointer}
+        .btn-top{background:#ffc107;color:#000}.btn-promo{background:#7c3aed;color:#fff}
+        .bal-row{display:flex;gap:6px;margin-bottom:10px}
+        .bal-item{flex:1;background:#12122a;border:1px solid #1e1e3a;border-radius:10px;padding:8px;text-align:center}
+        .bal-item .lbl{font-size:8px;color:#9ca3af}.bal-item .val{font-size:15px;font-weight:700}
+        .val.gms{color:#ffc107}.val.ton{color:#00e676}
+        .page{display:none}.page.active{display:block}
+        .card{background:#12122a;border:1px solid #1e1e3a;border-radius:10px;padding:10px;margin-bottom:6px}
+        .nav-bar{position:fixed;bottom:0;left:0;right:0;height:55px;background:#0d0d20;border-top:1px solid #1e1e3a;display:flex;z-index:1000;overflow-x:auto}
+        .nav-item{color:#9ca3af;font-size:7px;text-align:center;cursor:pointer;flex:1;min-width:40px;padding:4px 1px}
+        .nav-item.active{color:#7c3aed}.nav-ic{font-size:14px;display:block;margin-bottom:1px}
+        .btn{background:#7c3aed;color:#fff;border:none;padding:9px;border-radius:16px;width:100%;font-weight:700;font-size:11px;margin-top:4px;cursor:pointer}
+        .btn:active{opacity:.8}.btn.gr{background:#00e676;color:#000}.btn.gd{background:#ffc107;color:#000}.btn.cy{background:#00e5ff;color:#000}.btn.rd{background:#ff1744}.btn.ol{background:transparent;border:2px solid #7c3aed;color:#7c3aed}
+        .btn.sm{padding:5px 10px;font-size:10px;width:auto;margin:2px;display:inline-block}
+        .inp{width:100%;padding:8px 10px;background:#0a0a1a;border:1px solid #1e1e3a;border-radius:12px;color:#fff;margin-top:3px;font-size:11px;outline:none}.inp:focus{border-color:#7c3aed}
+        label{display:block;margin-top:6px;font-size:10px;color:#9ca3af}
+        h3{margin-bottom:6px;font-size:14px}h4{font-size:12px;margin-bottom:4px;color:#c0c0d0}
+        .click-area{text-align:center;padding:5px 0}
+        .click-btn{width:140px;height:140px;border-radius:50%;border:3px solid #7c3aed;background:radial-gradient(circle,#1e1e40,#0a0a1a);margin:10px auto;display:flex;align-items:center;justify-content:center;flex-direction:column;font-size:14px;font-weight:700;color:#ffc107;cursor:pointer;box-shadow:0 0 20px rgba(124,58,237,.4)}.click-btn:active{transform:scale(.9)}
+        .click-icon{font-size:32px;margin-bottom:3px}
+        .task-row{display:flex;justify-content:space-between;align-items:center;padding:7px;background:#0a0a1a;border-radius:7px;margin-bottom:3px;gap:5px}
+        .badge{padding:2px 6px;border-radius:8px;font-size:8px;font-weight:700}.badge-g{background:rgba(0,230,118,.2);color:#00e676}
+        .wallet-box{background:#0a0a1a;border:1px dashed #ffc107;border-radius:8px;padding:6px;word-break:break-all;font-size:8px;color:#ffc107;text-align:center;margin:5px 0}
+        .chart-wrap{background:#0a0a1a;border-radius:8px;padding:4px;margin:5px 0;height:120px}
+        canvas{width:100%!important;height:100%!important}
+        .price-up{font-size:12px;font-weight:700;color:#00e676;padding:2px 8px;background:rgba(0,230,118,.1);border-radius:8px;display:inline-block;margin:3px 0}
+        .price-down{font-size:12px;font-weight:700;color:#ff1744;padding:2px 8px;background:rgba(255,23,68,.1);border-radius:8px;display:inline-block;margin:3px 0}
+        .plus-anim{position:fixed;pointer-events:none;color:#ffc107;font-weight:700;font-size:16px;animation:floatUp .7s forwards;z-index:999}
+        @keyframes floatUp{0%{opacity:1;transform:translateY(0)}100%{opacity:0;transform:translateY(-70px)}}
+        .timer{color:#f59e0b;font-weight:700}
+        .ref-box{background:#0a0a1a;border:1px solid #7c3aed;border-radius:8px;padding:8px;text-align:center;margin:6px 0}
+        .ref-box .rlink{word-break:break-all;font-size:9px;color:#00e5ff}
+        .modal{position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,0.9);z-index:2000;display:flex;align-items:center;justify-content:center}
+        .modal-content{background:#12122a;border:1px solid #7c3aed;border-radius:14px;padding:15px;width:90%;max-width:350px;max-height:80vh;overflow-y:auto}
+        .modal-close{float:right;background:transparent;border:none;color:#fff;font-size:18px;cursor:pointer}
+    </style>
+</head>
+<body>
+<div class="container">
+    <div class="header">
+        <div class="id-badge">🆔 <span id="uid">...</span></div>
+        <div class="header-btns">
+            <button class="header-btn btn-top" onclick="showTop()">🏆</button>
+            <button class="header-btn btn-promo" onclick="showPromo()">🎁</button>
+        </div>
+    </div>
+    <div class="bal-row">
+        <div class="bal-item"><div class="lbl">🪙 Монеты</div><div class="val gms" id="b-gms">0</div></div>
+        <div class="bal-item"><div class="lbl">💰 TON</div><div class="val ton" id="b-ton">0.00</div></div>
+        <div class="bal-item"><div class="lbl">⚡ Энергия</div><div class="val" style="color:#00e5ff" id="stamina">100/100</div></div>
+    </div>
+
+    <!-- Ферма -->
+    <div id="page-clicker" class="page active">
+        <div class="click-area">
+            <div class="click-btn" id="mainClickBtn"><div class="click-icon">🌾</div>СОБРАТЬ</div>
+            <div style="color:#00e5ff;margin-top:8px">💪 +<span id="click-power">1</span> | 🤖 <span id="passive-info">выкл</span></div>
+            <div id="booster-info" style="color:#ffc107;font-size:10px;margin-top:2px"></div>
+        </div>
+        <div class="card" style="margin-top:12px">
+            <h4>🏆 Твой рейтинг</h4>
+            <div style="text-align:center;font-size:16px;font-weight:700;color:#ffc107">Место: <span id="my-rank">...</span></div>
+            <div style="text-align:center;font-size:11px;color:#9ca3af">Монет: <span id="my-coins">0</span></div>
+        </div>
+        <div class="card">
+            <h4>🎁 Ежедневный бонус</h4>
+            <div id="daily-bonus"></div>
+        </div>
+    </div>
+
+    <!-- Улучшения -->
+    <div id="page-upgrades" class="page">
+        <h3>🏪 Улучшения</h3>
+        <p style="font-size:9px;color:#9ca3af;margin-bottom:6px">💰 TON: <b id="upg-ton">0.00</b></p>
+        <div class="card"><h4>💪 Сила клика</h4><div id="upg-click"></div></div>
+        <div class="card"><h4>⚡ Энергия</h4><div id="upg-stamina"></div></div>
+        <div class="card"><h4>🤖 Пассив</h4><div id="upg-passive"></div></div>
+        <div class="card"><h4>🔥 Бустеры</h4><div id="upg-boost"></div></div>
+    </div>
+
+    <!-- Задания -->
+    <div id="page-tasks" class="page"><h3>📋 Задания</h3><div class="card"><div id="tasks-list"></div></div></div>
+
+    <!-- Рефералы -->
+    <div id="page-refs" class="page">
+        <h3>👥 Рефералы</h3>
+        <div class="card">
+            <h4>Твоя реферальная ссылка</h4>
+            <div class="ref-box"><p class="rlink" id="ref-link">...</p></div>
+            <button class="btn ol" id="btn-ref">📋 Копировать ссылку</button>
+        </div>
+        <div class="card">
+            <h4>Статистика</h4>
+            <p style="font-size:11px">👥 Приглашено: <b id="ref-count">0</b></p>
+            <p style="font-size:11px">💰 Заработано: <b id="ref-earned">0</b> монет</p>
+            <p style="font-size:10px;color:#9ca3af;margin-top:4px">Ты получаешь 1000 монет, друг получает 500 монет</p>
+        </div>
+    </div>
+
+    <!-- Биржа -->
+    <div id="page-exchange" class="page">
+        <h3>📈 Биржа</h3>
+        <div class="card" style="text-align:center">
+            <div style="font-size:10px;color:#9ca3af">Текущий курс</div>
+            <div style="font-size:18px;font-weight:700;color:#ffc107"><span id="rate">1M</span> = 1 TON</div>
+            <span id="price-change" class="price-up">📈 +0%</span><br>
+            <small style="color:#9ca3af">Комиссия: 5%</small>
+        </div>
+        <div class="chart-wrap"><canvas id="chart"></canvas></div>
+        <label>Монет (мин 100K):</label>
+        <input type="number" id="swap-gms" class="inp" value="100000" min="100000" oninput="swapCalc()">
+        <div style="text-align:center;margin:4px 0">= <span id="swap-ton" style="color:#00e676">0.10</span> TON</div>
+        <div style="display:flex;gap:6px">
+            <button class="btn gr" style="flex:1" id="btn-sell">💰 Продать</button>
+            <button class="btn gd" style="flex:1" id="btn-buy">💎 Купить</button>
+        </div>
+    </div>
+
+    <!-- Профиль -->
+    <div id="page-profile" class="page">
+        <h3>👤 Профиль</h3>
+        <div class="card" style="text-align:center">
+            <div style="font-size:20px;font-weight:700;color:#ffc107"><span id="p-gms">0</span> монет</div>
+            <div style="font-size:14px;color:#00e676"><span id="p-ton">0.00</span> TON</div>
+        </div>
+        <h4>💎 Пополнение TON</h4>
+        <p style="font-size:9px;color:#9ca3af">Мин: 0.1 TON</p>
+        <div class="wallet-box">UQDmNY1TIMIgnALOpAyJ4_XO2uroUNLFVRwGie5AEwzccaps</div>
+        <button class="btn ol" id="btn-copy">📋 Копировать адрес</button>
+        <p style="font-size:8px;color:#ffc107;margin-top:3px">⚠️ В комментарии укажи: ID <span id="p-uid">...</span></p>
+        <h4 style="margin-top:10px">💸 Вывод TON</h4>
+        <p style="font-size:9px;color:#9ca3af">Мин: 0.5 TON | Комиссия 5%</p>
+        <input type="number" id="w-amount" class="inp" placeholder="Сумма (мин 0.5)" min="0.5" step="0.1">
+        <input type="text" id="w-wallet" class="inp" placeholder="Твой кошелёк UQ...">
+        <button class="btn rd" id="btn-wd">💸 Вывести TON</button>
+    </div>
+
+    <!-- Админ -->
+    <div id="page-admin" class="page">
+        <h3 style="color:#7c3aed">👑 Админ-панель</h3>
+        <div class="card" style="border-color:#7c3aed">
+            <h4>⚙️ Управление игроком</h4>
+            <input type="text" id="a-id" class="inp" placeholder="Telegram ID игрока">
+            <input type="number" id="a-gms" class="inp" placeholder="Монеты (+/-)">
+            <input type="number" id="a-ton" class="inp" placeholder="TON (+/-)" step="0.01">
+            <button class="btn" id="btn-as">💾 Применить</button>
+        </div>
+        <div class="card" style="border-color:#7c3aed">
+            <h4>🔒 Блокировка</h4>
+            <input type="text" id="block-id" class="inp" placeholder="ID игрока для блокировки">
+            <button class="btn rd" id="btn-block">🔒 Заблокировать / Разблокировать</button>
+        </div>
+        <div class="card" style="border-color:#7c3aed">
+            <h4>🎁 Создать промокод</h4>
+            <input type="text" id="pc-code" class="inp" placeholder="Код (например: BONUS)">
+            <input type="number" id="pc-gms" class="inp" placeholder="Награда (монет)">
+            <input type="number" id="pc-max" class="inp" placeholder="Макс. активаций">
+            <button class="btn gd" id="btn-pc">🎁 Создать промокод</button>
+        </div>
+        <div class="card" style="border-color:#7c3aed">
+            <h4>📋 Добавить задание</h4>
+            <select id="t-type" class="inp"><option value="channel">📢 Канал</option><option value="chat">💬 Чат</option><option value="bot">🤖 Бот</option></select>
+            <input type="text" id="t-link" class="inp" placeholder="Ссылка (t.me/...)">
+            <input type="number" id="t-gms" class="inp" placeholder="Награда (монет)">
+            <button class="btn gd" id="btn-ta">➕ Добавить задание</button>
+        </div>
+    </div>
+</div>
+
+<div class="nav-bar">
+    <div class="nav-item active" id="nav-clicker"><span class="nav-ic">🌾</span>Ферма</div>
+    <div class="nav-item" id="nav-upgrades"><span class="nav-ic">🏪</span>Бусты</div>
+    <div class="nav-item" id="nav-tasks"><span class="nav-ic">📋</span>Задан</div>
+    <div class="nav-item" id="nav-refs"><span class="nav-ic">👥</span>Реф</div>
+    <div class="nav-item" id="nav-exchange"><span class="nav-ic">📈</span>Биржа</div>
+    <div class="nav-item" id="nav-profile"><span class="nav-ic">👤</span>Проф</div>
+    <div class="nav-item" id="nav-admin" style="display:none"><span class="nav-ic">👑</span>Адм</div>
+</div>
+
+<!-- Модальные окна -->
+<div class="modal" id="modal-top" style="display:none" onclick="closeModal('modal-top')">
+    <div class="modal-content" onclick="event.stopPropagation()">
+        <button class="modal-close" onclick="closeModal('modal-top')">✖</button>
+        <h3 style="text-align:center">🏆 Топ-50</h3>
+        <div id="cup-list" style="max-height:300px;overflow-y:auto"></div>
+    </div>
+</div>
+
+<div class="modal" id="modal-promo" style="display:none" onclick="closeModal('modal-promo')">
+    <div class="modal-content" onclick="event.stopPropagation()">
+        <button class="modal-close" onclick="closeModal('modal-promo')">✖</button>
+        <h3 style="text-align:center">🎁 Промокод</h3>
+        <input type="text" id="promo-input" class="inp" placeholder="Введи промокод">
+        <button class="btn gd" id="btn-promo-use">🎁 Активировать</button>
+    </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script>
+// ====== ИНИЦИАЛИЗАЦИЯ ======
+var tg = (window.Telegram && window.Telegram.WebApp) ? window.Telegram.WebApp : null;
+var isTG = !!tg;
+var uid;
+
+if (isTG) {
+    tg.ready(); tg.expand();
+    uid = tg.initDataUnsafe && tg.initDataUnsafe.user ? String(tg.initDataUnsafe.user.id) : 'tg_guest';
+} else {
+    uid = localStorage.getItem('farm_uid');
+    if (!uid) { uid = 'user_' + Math.floor(Math.random() * 1000000); localStorage.setItem('farm_uid', uid); }
+}
+
+document.getElementById('uid').innerText = uid;
+document.getElementById('p-uid').innerText = uid;
+document.getElementById('ref-link').innerText = 'https://t.me/bot?start=ref_' + uid;
+
+var ADMIN_ID = '8684827145';
+var WALLET = 'UQDmNY1TIMIgnALOpAyJ4_XO2uroUNLFVRwGie5AEwzccaps';
+
+if (uid === ADMIN_ID) document.getElementById('nav-admin').style.display = 'block';
+
+// ====== ДАННЫЕ ======
+var DB = JSON.parse(localStorage.getItem('farm_data') || '{"users":{},"tasks":[],"promos":[],"blocked":[],"history":[1000000,1010000,1020000,1035000,1050000,1060000],"totalActions":0}');
+if (!DB.users) DB.users = {};
+if (!DB.tasks) DB.tasks = [];
+if (!DB.promos) DB.promos = [];
+if (!DB.blocked) DB.blocked = [];
+if (!DB.history) DB.history = [1000000,1010000,1020000,1035000,1050000,1060000];
+if (!DB.totalActions) DB.totalActions = 0;
+
+if (!DB.users[uid]) {
+    DB.users[uid] = {
+        coins: 0, ton: 0, stamina: 100, maxStamina: 100,
+        clickLvl: 0, passLvl: 0, boostMul: 1, boostEnd: 0,
+        done: [], usedP: [], timers: {}, refs: 0, refEarned: 0,
+        dailyDay: 0, dailyTime: 0
+    };
+}
+
+var U = DB.users[uid];
+var rate = 1000000;
+var dailyRewards = [100, 250, 500, 1000, 2500, 5000, 10000];
+
+function save() { DB.users[uid] = U; localStorage.setItem('farm_data', JSON.stringify(DB)); refresh(); }
+
+function refresh() {
+    if (DB.blocked.indexOf(uid) >= 0) {
+        document.body.innerHTML = '<div style="text-align:center;padding:60px;color:#ff1744"><h1>⛔ Вы заблокированы</h1></div>';
+        return;
+    }
+    document.getElementById('b-gms').innerText = Math.floor(U.coins).toLocaleString();
+    document.getElementById('b-ton').innerText = U.ton.toFixed(2);
+    document.getElementById('p-gms').innerText = Math.floor(U.coins).toLocaleString();
+    document.getElementById('p-ton').innerText = U.ton.toFixed(2);
+    document.getElementById('upg-ton').innerText = U.ton.toFixed(2);
+    document.getElementById('stamina').innerText = Math.floor(U.stamina) + '/' + U.maxStamina;
+    document.getElementById('ref-count').innerText = U.refs || 0;
+    document.getElementById('ref-earned').innerText = Math.floor(U.refEarned || 0).toLocaleString();
+
+    var cp = 1 + (U.clickLvl > 0 ? [1,2,5,10,25,50][U.clickLvl-1] : 0);
+    document.getElementById('click-power').innerText = cp;
+    document.getElementById('passive-info').innerText = U.passLvl > 0 ? '1/' + [20,15,10,5,1][U.passLvl-1] + 'с' : 'выкл';
+
+    if (U.boostEnd > Date.now()) {
+        document.getElementById('booster-info').innerText = '🔥 x' + U.boostMul + ' (' + Math.ceil((U.boostEnd - Date.now())/1000) + 'с)';
+    } else { U.boostMul = 1; document.getElementById('booster-info').innerText = ''; }
+
+    rate = Math.max(300000, 1000000 - Math.floor(DB.totalActions / 5000));
+    document.getElementById('rate').innerText = (rate / 1000000).toFixed(1) + 'M';
+    
+    var prev = DB.history[DB.history.length - 2] || rate;
+    var pct = ((rate - prev) / prev * 100).toFixed(1);
+    var pcEl = document.getElementById('price-change');
+    if (pct >= 0) {
+        pcEl.innerHTML = '📈 +' + pct + '%';
+        pcEl.className = 'price-up';
+    } else {
+        pcEl.innerHTML = '📉 ' + pct + '%';
+        pcEl.className = 'price-down';
+    }
+
+    // Рейтинг на ферме
+    var arr = [];
+    for (var id in DB.users) { if (!DB.blocked.includes(id) && DB.users[id].coins > 0) arr.push({id:id,c:DB.users[id].coins}); }
+    arr.sort(function(a,b){return b.c-a.c});
+    var myPos = arr.findIndex(function(x){return x.id===uid}) + 1;
+    document.getElementById('my-rank').innerText = myPos > 0 ? '#' + myPos + ' из ' + arr.length : 'Нет';
+    document.getElementById('my-coins').innerText = Math.floor(U.coins).toLocaleString();
+
+    renderUpg(); renderTasks(); renderDaily(); drawChart();
+}
+
+// ====== КЛИК ======
+document.getElementById('mainClickBtn').onclick = function(e) {
+    if (DB.blocked.indexOf(uid) >= 0 || U.stamina < 1) return;
+    U.stamina--;
+    var earned = (1 + (U.clickLvl > 0 ? [1,2,5,10,25,50][U.clickLvl-1] : 0)) * U.boostMul;
+    U.coins += earned; DB.totalActions += earned;
+    var el = document.createElement('div'); el.className = 'plus-anim'; el.innerText = '+' + earned;
+    el.style.left = (e.clientX || 150) + 'px'; el.style.top = (e.clientY || 300) + 'px';
+    document.body.appendChild(el); setTimeout(function() { el.remove(); }, 700);
+    save();
+};
+
+// ====== УЛУЧШЕНИЯ ======
+function renderUpg() {
+    var cc = [0.1,0.5,1,2,5,10], cg = [1,2,5,10,25,50], cn = ['🥇Бронза','🥈Серебро','💎Золото','🔮Миф','🐉Легенда','🌌Космос'];
+    var h = '';
+    for (var i = 0; i < cc.length; i++) h += '<div class="task-row"><div>' + cn[i] + ' +' + cg[i] + '</div>' + (U.clickLvl > i ? '✅' : U.clickLvl === i ? '<button class="btn sm cy" onclick="buyC('+i+')">'+cc[i]+' TON</button>' : '🔒') + '</div>';
+    document.getElementById('upg-click').innerHTML = h;
+
+    var sc = [0.1,0.3,0.5,1,2], sg = [50,100,200,500,1000];
+    h = '';
+    for (var i = 0; i < sc.length; i++) h += '<div class="task-row"><div>⚡ +' + sg[i] + ' макс</div>' + (U.maxStamina >= 100 + sg[i] ? '✅' : '<button class="btn sm cy" onclick="buyS('+i+')">'+sc[i]+' TON</button>') + '</div>';
+    document.getElementById('upg-stamina').innerHTML = h;
+
+    var pc = [0.1,0.5,1,2,5], pi = [20,15,10,5,1], pn = ['🤖Робот','⚙️Мех','🏭Фабрика','⚡Станция','🌌Дыра'];
+    h = '';
+    for (var i = 0; i < pc.length; i++) h += '<div class="task-row"><div>' + pn[i] + ' 1/' + pi[i] + 'с</div>' + (U.passLvl > i ? '✅' : U.passLvl === i ? '<button class="btn sm cy" onclick="buyP('+i+')">'+pc[i]+' TON</button>' : '🔒') + '</div>';
+    document.getElementById('upg-passive').innerHTML = h;
+
+    document.getElementById('upg-boost').innerHTML = '<div class="task-row"><div>🔥 x5 (30с)</div><button class="btn sm cy" onclick="buyB(5,30,0.1)">0.1 TON</button></div><div class="task-row"><div>💣 x10 (1м)</div><button class="btn sm cy" onclick="buyB(10,60,0.5)">0.5 TON</button></div>';
+}
+
+function buyC(i) { if (U.clickLvl !== i || U.ton < [0.1,0.5,1,2,5,10][i]) return; U.ton -= [0.1,0.5,1,2,5,10][i]; U.clickLvl++; save(); }
+function buyS(i) { if (U.ton < [0.1,0.3,0.5,1,2][i]) return; U.ton -= [0.1,0.3,0.5,1,2][i]; U.maxStamina += [50,100,200,500,1000][i]; save(); }
+function buyP(i) { if (U.passLvl !== i || U.ton < [0.1,0.5,1,2,5][i]) return; U.ton -= [0.1,0.5,1,2,5][i]; U.passLvl++; save(); }
+function buyB(m,d,c) { if (U.ton < c) return; U.ton -= c; U.boostMul = m; U.boostEnd = Date.now() + d*1000; save(); }
+
+// ====== ЕЖЕДНЕВНЫЙ БОНУС ======
+function renderDaily() {
+    var box = document.getElementById('daily-bonus');
+    var now = Date.now();
+    
+    if (U.dailyTime && (now - U.dailyTime) < 86400000 && U.dailyDay >= 7) {
+        box.innerHTML = '<p style="text-align:center;color:#00e676">✅ Все бонусы собраны!</p>';
+        return;
+    }
+    if (U.dailyTime && (now - U.dailyTime) < 86400000) {
+        var next = new Date(U.dailyTime + 86400000);
+        var hours = Math.ceil((next - now) / 3600000);
+        box.innerHTML = '<p style="text-align:center">Следующий бонус через ' + hours + ' ч</p>';
+        return;
+    }
+    
+    box.innerHTML = '';
+    for (var i = 0; i < dailyRewards.length; i++) {
+        var claimed = i < U.dailyDay;
+        var current = i === U.dailyDay;
+        box.innerHTML += '<div class="task-row"><div>День ' + (i+1) + ': +' + dailyRewards[i] + ' монет</div>' +
+            (claimed ? '✅' : current ? '<button class="btn sm gd" onclick="claimDaily()">🎁 Забрать</button>' : '🔒') + '</div>';
+    }
+}
+
+function claimDaily() {
+    U.coins += dailyRewards[U.dailyDay];
+    U.dailyDay++;
+    U.dailyTime = Date.now();
+    save();
+}
+
+// ====== ЗАДАНИЯ ======
+function renderTasks() {
+    var box = document.getElementById('tasks-list');
+    if (!DB.tasks.length) { box.innerHTML = '<p style="color:#9ca3af;text-align:center">Нет заданий</p>'; return; }
+    box.innerHTML = '';
+    for (var i = 0; i < DB.tasks.length; i++) {
+        var t = DB.tasks[i], done = U.done.indexOf(t.id) >= 0, timer = U.timers[t.id];
+        if (done) box.innerHTML += '<div class="task-row"><div><b>' + (t.type==='channel'?'📢':t.type==='chat'?'💬':'🤖') + ' ' + t.link + '</b><br>+' + t.gms + ' монет</div><span class="badge badge-g">✅</span></div>';
+        else if (timer && Date.now() > timer) box.innerHTML += '<div class="task-row"><div><b>' + (t.type==='channel'?'📢':t.type==='chat'?'💬':'🤖') + ' ' + t.link + '</b><br>+' + t.gms + ' монет</div><button class="btn sm gr" onclick="claimT(\''+t.id+'\')">🎁 Забрать</button></div>';
+        else if (timer) box.innerHTML += '<div class="task-row"><div><b>' + (t.type==='channel'?'📢':t.type==='chat'?'💬':'🤖') + ' ' + t.link + '</b><br>+' + t.gms + ' монет</div><span class="timer">⏳ ' + Math.ceil((timer - Date.now())/1000) + 'с</span></div>';
+        else box.innerHTML += '<div class="task-row"><div><b>' + (t.type==='channel'?'📢':t.type==='chat'?'💬':'🤖') + ' ' + t.link + '</b><br>+' + t.gms + ' монет</div><button class="btn sm cy" onclick="startT(\''+t.id+'\')">✅</button></div>';
+    }
+}
+
+function startT(id) {
+    var t = DB.tasks.find(function(x) { return x.id === id; }); if (!t) return;
+    if (isTG) tg.openLink('https://' + t.link); else window.open('https://' + t.link, '_blank');
+    U.timers[id] = Date.now() + 5000; save();
+}
+
+function claimT(id) {
+    var t = DB.tasks.find(function(x) { return x.id === id; }); if (!t) return;
+    U.done.push(id); U.coins += t.gms; DB.totalActions += t.gms;
+    delete U.timers[id]; save();
+}
+
+// ====== БИРЖА ======
+document.getElementById('btn-sell').onclick = function() {
+    var g = parseInt(document.getElementById('swap-gms').value);
+    if (isNaN(g) || g < 100000 || g > U.coins) return;
+    U.coins -= g; U.ton += g / rate * 0.95; DB.totalActions -= g;
+    DB.history.push(rate); if (DB.history.length > 40) DB.history.shift(); save();
+};
+document.getElementById('btn-buy').onclick = function() {
+    var g = parseInt(document.getElementById('swap-gms').value);
+    if (isNaN(g) || g < 100000) return;
+    var t = g / rate; if (t > U.ton) return;
+    U.ton -= t; U.coins += g; DB.totalActions += g;
+    DB.history.push(rate); if (DB.history.length > 40) DB.history.shift(); save();
+};
+function swapCalc() { document.getElementById('swap-ton').innerText = ((parseInt(document.getElementById('swap-gms').value) || 100000) / rate).toFixed(4); }
+
+// ====== ПРОМОКОД ======
+document.getElementById('btn-promo-use').onclick = function() {
+    var c = document.getElementById('promo-input').value.trim();
+    if (!c) return;
+    var p = DB.promos.find(function(x) { return x.code === c.toUpperCase(); });
+    if (!p) return alert('❌ Промокод не найден');
+    if (p.used.indexOf(uid) >= 0) return alert('⚠️ Уже использован');
+    if (p.used.length >= p.max) return alert('⚠️ Закончился');
+    p.used.push(uid); U.coins += p.gms; save();
+    alert('🎁 +' + p.gms + ' монет!');
+    closeModal('modal-promo');
+};
+
+function showPromo() { document.getElementById('modal-promo').style.display = 'flex'; }
+function showTop() {
+    var arr = [];
+    for (var id in DB.users) { if (!DB.blocked.includes(id) && DB.users[id].coins > 0) arr.push({id:id,c:DB.users[id].coins}); }
+    arr.sort(function(a,b){return b.c-a.c}); arr = arr.slice(0,50);
+    var box = document.getElementById('cup-list');
+    box.innerHTML = arr.length ? arr.map(function(u,i){return '<div class="task-row"><div>'+(i<3?['🥇','🥈','🥉'][i]:'#'+(i+1))+' <b>'+u.id+'</b></div><div>'+Math.floor(u.c).toLocaleString()+' 🪙</div></div>';}).join('') : '<p style="color:#9ca3af;text-align:center">Нет игроков</p>';
+    document.getElementById('modal-top').style.display = 'flex';
+}
+function closeModal(id) { document.getElementById(id).style.display = 'none'; }
+
+// ====== РЕФЕРАЛЫ ======
+document.getElementById('btn-ref').onclick = function() {
+    navigator.clipboard.writeText(document.getElementById('ref-link').innerText).then(function() { alert('✅ Скопировано!'); });
+};
+
+// ====== АДМИН ======
+document.getElementById('btn-pc').onclick = function() {
+    var c = document.getElementById('pc-code').value.trim().toUpperCase(), g = parseInt(document.getElementById('pc-gms').value), m = parseInt(document.getElementById('pc-max').value);
+    if (!c || !g || !m) return;
+    DB.promos.push({ code: c, gms: g, max: m, used: [] }); save(); alert('✅ Промокод создан!');
+};
+document.getElementById('btn-ta').onclick = function() {
+    var l = document.getElementById('t-link').value.trim(), g = parseInt(document.getElementById('t-gms').value);
+    if (!l.startsWith('t.me/') || !g) return;
+    DB.tasks.push({ id: Date.now().toString(), type: document.getElementById('t-type').value, link: l, gms: g }); save(); alert('✅ Задание добавлено!');
+};
+document.getElementById('btn-as').onclick = function() {
+    var id = document.getElementById('a-id').value.trim(), dg = parseInt(document.getElementById('a-gms').value) || 0, dt = parseFloat(document.getElementById('a-ton').value) || 0;
+    if (!id) return;
+    if (!DB.users[id]) DB.users[id] = { coins: 0, ton: 0, stamina: 100, maxStamina: 100, clickLvl: 0, passLvl: 0, boostMul: 1, boostEnd: 0, done: [], usedP: [], timers: {}, refs: 0, refEarned: 0, dailyDay: 0, dailyTime: 0 };
+    DB.users[id].coins += dg; DB.users[id].ton += dt;
+    if (id === uid) U = DB.users[id];
+    save(); alert('✅ Обновлён!');
+};
+document.getElementById('btn-block').onclick = function() {
+    var id = document.getElementById('block-id').value.trim(); if (!id) return;
+    if (DB.blocked.indexOf(id) >= 0) { DB.blocked = DB.blocked.filter(function(x) { return x !== id; }); alert('🔓 Разблокирован'); }
+    else { DB.blocked.push(id); alert('🔒 Заблокирован'); }
+    save();
+};
+
+// ====== ПРОФИЛЬ ======
+document.getElementById('btn-copy').onclick = function() { navigator.clipboard.writeText(WALLET).then(function() { alert('✅ Скопировано!'); }); };
+document.getElementById('btn-wd').onclick = function() {
+    var a = parseFloat(document.getElementById('w-amount').value), w = document.getElementById('w-wallet').value.trim();
+    if (isNaN(a) || a < 0.5) return alert('Мин. 0.5 TON');
+    var need = a * rate / 0.95; if (need > U.coins) return alert('Не хватает монет!');
+    if (!w.startsWith('UQ')) return alert('Неверный адрес!');
+    U.coins -= need; save(); alert('✅ Вывод ' + a.toFixed(2) + ' TON');
+};
+
+// ====== ГРАФИК ======
+var chart;
+function drawChart() {
+    var ctx = document.getElementById('chart'); if (!ctx) return;
+    if (chart) chart.destroy();
+    var col = DB.history.length>1 && DB.history[DB.history.length-1] >= DB.history[DB.history.length-2] ? '#00e676' : '#ff1744';
+    chart = new Chart(ctx, { type: 'line', data: { labels: DB.history.map(function() { return ''; }), datasets: [{ data: DB.history, borderColor: col, backgroundColor: col+'22', fill: true, tension: 0.4, pointRadius: 0, borderWidth: 2 }] }, options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } }, scales: { x: { display: false }, y: { display: false } } });
+}
+
+// ====== НАВИГАЦИЯ ======
+function navGo(id) {
+    document.querySelectorAll('.page').forEach(function(p) { p.classList.remove('active'); });
+    document.getElementById('page-' + id).classList.add('active');
+    document.querySelectorAll('.nav-item').forEach(function(n) { n.classList.remove('active'); });
+    document.getElementById('nav-' + id).classList.add('active');
+}
+document.querySelectorAll('.nav-item').forEach(function(el) { el.onclick = function() { navGo(this.id.replace('nav-', '')); }; });
+
+// ====== ТАЙМЕР ======
+setInterval(function() {
+    if (DB.blocked.indexOf(uid) >= 0) return;
+    if (U.stamina < U.maxStamina) U.stamina = Math.min(U.maxStamina, U.stamina + 1);
+    if (U.passLvl > 0) { var iv = [20,15,10,5,1][U.passLvl-1]; U.coins += (1/iv)*U.boostMul; DB.totalActions += (1/iv); }
+    save();
+}, 10000);
+
+refresh();
+</script>
+</body>
+  </html>
