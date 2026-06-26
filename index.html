@@ -1,0 +1,134 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Ферма Процветания</title>
+    <script src="https://telegram.org/js/telegram-web-app.js"></script>
+    <style>
+        body { background: #0a0a14; color: #fff; font-family: sans-serif; margin: 0; padding: 10px; }
+        .card { background: #12122a; border: 1px solid #1e1e3a; padding: 15px; border-radius: 12px; margin-bottom: 10px; }
+        .btn { background: #7c3aed; color: #fff; border: none; padding: 10px; border-radius: 8px; width: 100%; cursor: pointer; margin-top: 5px; }
+        .inp { width: 100%; padding: 8px; background: #0a0a1a; border: 1px solid #1e1e3a; color: #fff; border-radius: 8px; margin-top: 5px; }
+        .nav-bar { position: fixed; bottom: 0; left: 0; right: 0; background: #0d0d20; display: flex; padding: 10px; z-index: 1000; }
+        .nav-item { flex: 1; text-align: center; color: #9ca3af; cursor: pointer; padding: 5px; }
+        .page { display: none; padding-bottom: 60px; }
+        .active { display: block; }
+    </style>
+</head>
+<body>
+
+<div class="card" onclick="copyId()" style="cursor: pointer; text-align: center;">
+    🆔 ID (нажми, чтобы скопировать): <br><span id="uid" style="color: #7c3aed; font-weight: bold;">...</span>
+</div>
+
+<div id="page-clicker" class="page active">
+    <div class="card">
+        <h3>Монеты: <span id="bal">0</span></h3>
+        <p>Энергия: <span id="stamina">100</span>/100</p>
+    </div>
+    <button class="btn" style="height: 120px; font-size: 20px;" onclick="clickFarm()">Собрать 🌾</button>
+</div>
+
+<div id="page-tasks" class="page">
+    <h3>Задания</h3>
+    <div id="tasks-list"></div>
+</div>
+
+<div id="page-admin" class="page">
+    <h3>Админ-панель</h3>
+    <div class="card">
+        <input type="text" id="a-id" class="inp" placeholder="ID игрока">
+        <input type="number" id="a-gms" class="inp" placeholder="Начислить монет">
+        <button class="btn" onclick="adminGive()">Начислить</button>
+    </div>
+    <div class="card">
+        <input type="text" id="t-text" class="inp" placeholder="Текст задания">
+        <button class="btn" onclick="addTask()">Добавить задание</button>
+    </div>
+    <div id="admin-tasks-list"></div>
+</div>
+
+<div class="nav-bar">
+    <div class="nav-item" onclick="show('page-clicker')">Ферма</div>
+    <div class="nav-item" onclick="show('page-tasks')">Задания</div>
+    <div class="nav-item" id="nav-admin" style="display:none" onclick="show('page-admin')">Админ</div>
+</div>
+
+<script>
+let tg = window.Telegram.WebApp;
+let uid = tg.initDataUnsafe?.user?.id?.toString() || 'guest_' + Math.floor(Math.random()*1000);
+document.getElementById('uid').innerText = uid;
+
+let DB = JSON.parse(localStorage.getItem('farm_db') || '{"users":{},"tasks":[]}');
+if (!DB.users[uid]) DB.users[uid] = { coins: 0, stamina: 100, lastTime: Date.now() };
+
+let U = DB.users[uid];
+
+function save() { 
+    DB.users[uid] = U; 
+    localStorage.setItem('farm_db', JSON.stringify(DB)); 
+    render(); 
+}
+
+// Восстановление энергии (автоматически)
+setInterval(() => {
+    let now = Date.now();
+    let secondsPassed = (now - U.lastTime) / 1000;
+    if (secondsPassed >= 10) {
+        U.stamina = Math.min(100, U.stamina + Math.floor(secondsPassed / 10));
+        U.lastTime = now;
+        save();
+    }
+}, 5000);
+
+function clickFarm() {
+    if (U.stamina > 0) {
+        U.stamina--; U.coins++; save();
+    }
+}
+
+function copyId() {
+    navigator.clipboard.writeText(uid);
+    alert('ID ' + uid + ' скопирован!');
+}
+
+function show(id) {
+    document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+    document.getElementById(id).classList.add('active');
+}
+
+function addTask() {
+    let text = document.getElementById('t-text').value;
+    if(text) { DB.tasks.push(text); save(); render(); }
+}
+
+function delTask(i) {
+    DB.tasks.splice(i, 1); save(); render();
+}
+
+function adminGive() {
+    let id = document.getElementById('a-id').value;
+    let amt = parseInt(document.getElementById('a-gms').value);
+    if (DB.users[id]) { DB.users[id].coins += amt; save(); alert('Начислено!'); }
+}
+
+function render() {
+    document.getElementById('bal').innerText = U.coins;
+    document.getElementById('stamina').innerText = U.stamina;
+    
+    let list = document.getElementById('tasks-list');
+    let alist = document.getElementById('admin-tasks-list');
+    list.innerHTML = ''; alist.innerHTML = '';
+    
+    DB.tasks.forEach((t, i) => {
+        list.innerHTML += `<div class="card">${t}</div>`;
+        alist.innerHTML += `<div class="card" style="display:flex; justify-content:space-between;">${t} <button class="btn" style="width:auto; margin:0;" onclick="delTask(${i})">Удалить</button></div>`;
+    });
+}
+
+if(uid === '8684827145') document.getElementById('nav-admin').style.display = 'block';
+render();
+</script>
+</body>
+</html>
