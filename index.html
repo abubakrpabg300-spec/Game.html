@@ -1,0 +1,558 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>🏰 Rich Farm</title>
+    <style>
+        :root {
+            --bg: #06080d;
+            --card: #111827;
+            --gold: #f0b90b;
+            --green: #10b981;
+            --red: #f85149;
+            --blue: #6366f1;
+            --text: #e8e8e8;
+            --sub: #8899aa;
+        }
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: 'Segoe UI', sans-serif;
+            background: var(--bg);
+            color: var(--text);
+            min-height: 100vh;
+            max-width: 500px;
+            margin: 0 auto;
+            overflow-x: hidden;
+            padding-bottom: 70px;
+        }
+        .screen { display: none; padding: 10px; }
+        .screen.active { display: block; }
+        
+        /* Нижнее меню */
+        .bottom-nav {
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            max-width: 500px;
+            margin: 0 auto;
+            background: #111827;
+            display: flex;
+            padding: 8px;
+            gap: 4px;
+            border-top: 1px solid #1f2937;
+            z-index: 100;
+        }
+        .nav-btn {
+            flex: 1;
+            padding: 8px;
+            text-align: center;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 10px;
+            color: #8899aa;
+            border: none;
+            background: transparent;
+            transition: all 0.2s;
+        }
+        .nav-btn.active { background: var(--gold); color: #000; font-weight: bold; }
+        .nav-btn .icon { font-size: 20px; display: block; }
+
+        /* Карточки */
+        .card {
+            background: var(--card);
+            padding: 14px;
+            border-radius: 12px;
+            margin: 8px 0;
+            border: 1px solid #1f2937;
+        }
+        .card-gold { border-color: var(--gold); }
+
+        /* Кнопки */
+        .btn {
+            padding: 12px;
+            border-radius: 10px;
+            border: none;
+            font-weight: bold;
+            cursor: pointer;
+            font-size: 14px;
+            width: 100%;
+            margin: 4px 0;
+        }
+        .btn-gold { background: var(--gold); color: #000; }
+        .btn-blue { background: var(--blue); color: #fff; }
+        .btn-green { background: var(--green); color: #fff; }
+        .btn-red { background: var(--red); color: #fff; }
+        .btn-dark { background: #1f2937; color: #fff; }
+
+        /* Инпуты */
+        .input {
+            width: 100%;
+            padding: 12px;
+            border-radius: 8px;
+            border: 1px solid #1f2937;
+            background: #06080d;
+            color: #fff;
+            font-size: 14px;
+            margin: 6px 0;
+        }
+
+        /* Главный экран */
+        .main-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 6px;
+            margin: 8px 0;
+        }
+        .main-btn {
+            padding: 12px 8px;
+            border-radius: 10px;
+            text-align: center;
+            cursor: pointer;
+            font-size: 12px;
+            background: var(--card);
+            border: 1px solid #1f2937;
+            color: var(--text);
+        }
+        .main-btn .icon { font-size: 24px; display: block; margin-bottom: 4px; }
+        .main-img {
+            width: 100%;
+            height: 200px;
+            background: #1a1a2e;
+            border-radius: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 80px;
+            margin: 10px 0;
+        }
+        .main-actions {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 8px;
+            margin: 10px 0;
+        }
+
+        /* Шахта */
+        .mine-grid {
+            display: grid;
+            grid-template-columns: repeat(5, 1fr);
+            gap: 4px;
+            margin: 10px 0;
+        }
+        .mine-cell {
+            aspect-ratio: 1;
+            background: #1f2937;
+            border-radius: 8px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 28px;
+            cursor: pointer;
+            transition: all 0.1s;
+        }
+        .mine-cell.player { background: var(--blue); }
+        .mine-cell.broken { background: #0a0a0a; }
+        .mine-controls {
+            display: flex;
+            justify-content: center;
+            gap: 10px;
+            margin: 10px 0;
+        }
+        .mine-ctrl {
+            width: 50px;
+            height: 50px;
+            border-radius: 12px;
+            background: var(--card);
+            border: 1px solid #1f2937;
+            color: #fff;
+            font-size: 20px;
+            cursor: pointer;
+        }
+        .mine-ctrl.center { background: var(--gold); color: #000; font-size: 24px; width: 60px; height: 60px; }
+
+        /* Баланс в шапке */
+        .balance-top {
+            display: flex;
+            justify-content: space-between;
+            padding: 8px;
+            font-size: 13px;
+            color: var(--sub);
+        }
+        .balance-top span { color: var(--gold); }
+
+        /* Табы */
+        .tab-link {
+            display: inline-block;
+            padding: 8px 16px;
+            background: #1f2937;
+            border-radius: 20px;
+            margin: 4px;
+            cursor: pointer;
+            font-size: 12px;
+            color: #8899aa;
+        }
+        .tab-link.active { background: var(--gold); color: #000; }
+
+        /* Текст */
+        .gold-text { color: var(--gold); }
+        .green-text { color: var(--green); }
+        .red-text { color: var(--red); }
+        .sub-text { color: var(--sub); font-size: 12px; }
+        .divider { border-top: 1px solid #1f2937; margin: 10px 0; }
+
+        /* Сетка */
+        .row { display: flex; gap: 8px; }
+        .col { flex: 1; }
+    </style>
+</head>
+<body>
+
+    <!-- ====== ШАХТА ====== -->
+    <div class="screen active" id="screen-mine">
+        <div class="balance-top">
+            💰 <span id="coins">120</span> | ⭐ <span id="score">45</span>
+        </div>
+        <h3>⛏ Шахта</h3>
+        <div class="mine-grid" id="mineGrid"></div>
+        <div class="mine-controls">
+            <button class="mine-ctrl" onclick="movePlayer(0,-1)">⬆</button>
+        </div>
+        <div class="mine-controls">
+            <button class="mine-ctrl" onclick="movePlayer(-1,0)">⬅</button>
+            <button class="mine-ctrl center" onclick="hitBlock()">⛏</button>
+            <button class="mine-ctrl" onclick="movePlayer(1,0)">➡</button>
+        </div>
+        <div class="mine-controls">
+            <button class="mine-ctrl" onclick="movePlayer(0,1)">⬇</button>
+        </div>
+        <p class="sub-text" style="text-align:center">Тапни 3 раза чтобы разбить блок</p>
+    </div>
+
+    <!-- ====== ГЛАВНАЯ ====== -->
+    <div class="screen" id="screen-main">
+        <div class="main-grid">
+            <button class="main-btn" onclick="showSection('bonus')"><span class="icon">🎁</span>Бонус</button>
+            <button class="main-btn" onclick="showSection('promo')"><span class="icon">🔑</span>Промо</button>
+            <button class="main-btn" onclick="showSection('tickets')"><span class="icon">🎟</span>Билеты</button>
+            <button class="main-btn" onclick="showSection('dailycode')"><span class="icon">🗝</span>Код</button>
+            <button class="main-btn" onclick="showSection('pickaxe')"><span class="icon">⚒</span>Кирка</button>
+            <button class="main-btn" onclick="showSection('premium')"><span class="icon">💰</span>Премиум</button>
+        </div>
+        <div class="main-img">👷⛏️</div>
+        <div class="main-actions">
+            <button class="btn btn-gold" onclick="showTab('mine')">⛏ В ШАХТУ</button>
+            <button class="btn btn-blue" onclick="showSection('boost')">🚀 БУСТ</button>
+        </div>
+    </div>
+
+    <!-- ====== ЗАДАНИЯ ====== -->
+    <div class="screen" id="screen-tasks">
+        <h3>📋 Задания</h3>
+        <div id="tasksList"></div>
+    </div>
+
+    <!-- ====== ТУРНИР ====== -->
+    <div class="screen" id="screen-tournament">
+        <h3>🏆 Турнир</h3>
+        <div class="card card-gold">
+            <h4>🏆 Rich Cup #1</h4>
+            <p class="sub-text">📅 Осталось: 14 дней</p>
+            <p class="gold-text">💰 Призовой фонд: 20 000 RICH</p>
+            <p>🥇 1 место — 8 000 RICH</p>
+            <p>🥈 2 место — 4 000 RICH</p>
+            <p>🥉 3 место — 2 000 RICH</p>
+            <p>⭐ 4-5 место — 1 000 RICH</p>
+            <div class="divider"></div>
+            <p class="sub-text">🤝 Спонсоры: MILENIUM, GIFT KOMBAT</p>
+            <p>👤 Участников: 47</p>
+            <p>📊 Ваша позиция: 12 место | ⭐ 325 баллов</p>
+            <button class="btn btn-gold" onclick="alert('Таблица лидеров')">📊 ТАБЛИЦА ЛИДЕРОВ</button>
+        </div>
+    </div>
+
+    <!-- ====== ДРУЗЬЯ ====== -->
+    <div class="screen" id="screen-friends">
+        <h3>👥 Друзья</h3>
+        <div class="card">
+            <p>🔗 Твоя ссылка:</p>
+            <div class="input" style="font-size:11px">t.me/RichFarmBot?start=8684827145</div>
+            <button class="btn btn-blue" onclick="copyText('https://t.me/RichFarmBot?start=8684827145')">📋 КОПИРОВАТЬ</button>
+        </div>
+        <div class="card">
+            <p>👤 Приглашено: 5 друзей</p>
+            <p>💰 Заработано: 30 RICH</p>
+            <div class="divider"></div>
+            <p class="sub-text">📌 +10 RICH когда друг выполнит 5 заданий</p>
+            <p class="sub-text">📌 +5% от пополнений друзей</p>
+        </div>
+    </div>
+
+    <!-- ====== ПРОФИЛЬ ====== -->
+    <div class="screen" id="screen-profile">
+        <h3>👤 Профиль</h3>
+        <div class="card card-gold">
+            <p>💎 RICH: <b id="richBal">1250</b></p>
+            <p>💵 GRAM: <b id="gramBal">10</b></p>
+        </div>
+        <div class="card">
+            <p>⭐ Баллы: <span id="profileScore">450</span></p>
+            <p>✅ Заданий: 12</p>
+            <p>👥 Друзей: 5</p>
+        </div>
+        <button class="btn btn-gold" onclick="showSection('deposit')">💎 ПОПОЛНИТЬ</button>
+        <button class="btn btn-blue" onclick="showSection('withdraw')">💸 ВЫВЕСТИ</button>
+    </div>
+
+    <!-- ====== БОНУС ====== -->
+    <div class="screen" id="section-bonus">
+        <h3>🎁 Ежедневный бонус</h3>
+        <div class="card" style="text-align:center">
+            <p style="font-size:60px">🎁</p>
+            <p>📅 День 1: +3 | День 2: +5 | День 3: +7</p>
+            <p>📅 День 4: +10 | День 5: +15 | День 6: +20</p>
+            <p>📅 День 7: +30 🎉</p>
+            <div class="divider"></div>
+            <p>🔥 Серия: 3 дня</p>
+            <p class="gold-text">💰 Сегодня: +7 RICH</p>
+            <button class="btn btn-gold" onclick="alert('✅ +7 RICH!')">🎁 ЗАБРАТЬ</button>
+        </div>
+        <button class="btn btn-dark" onclick="showTab('main')">🔙 НАЗАД</button>
+    </div>
+
+    <!-- ====== ПРОМОКОД ====== -->
+    <div class="screen" id="section-promo">
+        <h3>🔑 Промокод</h3>
+        <input class="input" placeholder="Введите промокод">
+        <button class="btn btn-gold" onclick="alert('✅ Активировано!')">🔓 АКТИВИРОВАТЬ</button>
+        <button class="btn btn-dark" onclick="showTab('main')">🔙 НАЗАД</button>
+    </div>
+
+    <!-- ====== БИЛЕТЫ ====== -->
+    <div class="screen" id="section-tickets">
+        <h3>🎟 Билеты</h3>
+        <div id="ticketsList"></div>
+        <button class="btn btn-dark" onclick="showTab('main')">🔙 НАЗАД</button>
+    </div>
+
+    <!-- ====== ЕЖЕДНЕВНЫЙ КОД ====== -->
+    <div class="screen" id="section-dailycode">
+        <h3>🗝 Ежедневный код</h3>
+        <input class="input" placeholder="Введите код">
+        <button class="btn btn-gold" onclick="alert('✅ Код активирован!')">🔓 АКТИВИРОВАТЬ</button>
+        <p class="sub-text">⏰ Новый код через: 14ч 25м</p>
+        <button class="btn btn-dark" onclick="showTab('main')">🔙 НАЗАД</button>
+    </div>
+
+    <!-- ====== КИРКА ====== -->
+    <div class="screen" id="section-pickaxe">
+        <h3>⚒ Улучшить кирку</h3>
+        <div class="card">
+            <p>Текущая: 🥉 Бронза</p>
+            <p class="green-text">Доход: +5 монет/блок</p>
+        </div>
+        <div class="card">
+            <p>🥈 Серебро — 500 RICH</p>
+            <p class="green-text">Доход: +15 монет/блок</p>
+            <button class="btn btn-gold">⚒ УЛУЧШИТЬ</button>
+        </div>
+        <div class="card">
+            <p>🥇 Золото — 1500 RICH</p>
+            <p class="green-text">Доход: +50 монет/блок</p>
+            <button class="btn btn-dark" disabled>🔒 Недоступно</button>
+        </div>
+        <button class="btn btn-dark" onclick="showTab('main')">🔙 НАЗАД</button>
+    </div>
+
+    <!-- ====== ПРЕМИУМ ====== -->
+    <div class="screen" id="section-premium">
+        <h3>💰 Премиум</h3>
+        <div class="card card-gold" style="text-align:center">
+            <p style="font-size:60px">👑</p>
+            <p>Статус: ⭐ Обычный</p>
+            <div class="divider"></div>
+            <p>⭐ ПРЕМИУМ</p>
+            <p>🎁 +50% к ежед. бонусу</p>
+            <p>⛏ +25% к доходу шахты</p>
+            <p>🎟 Удвоение шанса в билетах</p>
+            <p class="gold-text">💰 Цена: 2000 RICH</p>
+            <p class="sub-text">📅 На 30 дней</p>
+            <button class="btn btn-gold">💰 КУПИТЬ ПРЕМИУМ</button>
+        </div>
+        <button class="btn btn-dark" onclick="showTab('main')">🔙 НАЗАД</button>
+    </div>
+
+    <!-- ====== БУСТ ====== -->
+    <div class="screen" id="section-boost">
+        <h3>🚀 Буст</h3>
+        <div class="card"><p>⚡ Ускорение — 50 RICH</p><p class="sub-text">x2 доход шахты на 1 час</p><button class="btn btn-blue">🚀 АКТИВИРОВАТЬ</button></div>
+        <div class="card"><p>🔥 Мега-буст — 150 RICH</p><p class="sub-text">x3 доход шахты на 1 час</p><button class="btn btn-blue">🚀 АКТИВИРОВАТЬ</button></div>
+        <div class="card"><p>💎 Легендарный — 500 RICH</p><p class="sub-text">x5 доход шахты на 30 мин</p><button class="btn btn-blue">🚀 АКТИВИРОВАТЬ</button></div>
+        <button class="btn btn-dark" onclick="showTab('main')">🔙 НАЗАД</button>
+    </div>
+
+    <!-- ====== ПОПОЛНЕНИЕ ====== -->
+    <div class="screen" id="section-deposit">
+        <h3>💎 Пополнение Gram (TON)</h3>
+        <div class="card">
+            <p class="sub-text">📌 1 TON ≈ 1000 RICH</p>
+            <p class="sub-text">📌 Минимум: 1 TON</p>
+            <p>💼 Кошелёк:</p>
+            <div class="input" style="font-size:11px">UQDmNY1TIMIgnALOpAyJ4_XO2uroUNLFVRwGie5AEwzccaps</div>
+            <button class="btn btn-blue" onclick="copyText('UQDmNY1TIMIgnALOpAyJ4_XO2uroUNLFVRwGie5AEwzccaps')">📋 КОПИРОВАТЬ</button>
+            <p>🆔 Ваш ID: <b>8684827145</b></p>
+            <button class="btn btn-blue" onclick="copyText('8684827145')">📋 КОПИРОВАТЬ ID</button>
+            <p class="red-text" style="margin-top:8px">⚠️ Укажите ID в комментарии к переводу!</p>
+        </div>
+        <button class="btn btn-dark" onclick="showTab('profile')">🔙 НАЗАД</button>
+    </div>
+
+    <!-- ====== ВЫВОД ====== -->
+    <div class="screen" id="section-withdraw">
+        <h3>💸 Вывод</h3>
+        <p>💎 RICH: <b id="wdRich">5500</b></p>
+        <p>💵 GRAM: <b id="wdGram">10</b></p>
+        <input class="input" type="number" id="wdAmount" placeholder="Введите сумму">
+        <input class="input" type="text" id="wdWallet" placeholder="Gram (TON) кошелёк">
+        <p class="sub-text" id="wdResult"></p>
+        <button class="btn btn-gold" onclick="withdraw('rich')">💎 ВЫВОД RICH (мин 5000, комиссия 10%)</button>
+        <button class="btn btn-blue" onclick="withdraw('gram')">💵 ВЫВОД GRAM (мин 5, комиссия 10%)</button>
+        <button class="btn btn-dark" onclick="showTab('profile')">🔙 НАЗАД</button>
+    </div>
+
+    <!-- Нижнее меню -->
+    <div class="bottom-nav">
+        <button class="nav-btn active" onclick="showTab('tasks')"><span class="icon">📋</span>Задания</button>
+        <button class="nav-btn" onclick="showTab('tournament')"><span class="icon">🏆</span>Турнир</button>
+        <button class="nav-btn" onclick="showTab('main')"><span class="icon">🏠</span>Главная</button>
+        <button class="nav-btn" onclick="showTab('friends')"><span class="icon">👥</span>Друзья</button>
+        <button class="nav-btn" onclick="showTab('profile')"><span class="icon">👤</span>Профиль</button>
+    </div>
+
+    <script>
+        // Данные
+        let player = { x: 2, y: 2 };
+        let blocks = [];
+        for (let i = 0; i < 25; i++) {
+            let r = Math.random();
+            let type = 'stone';
+            if (r < 0.4) type = 'stone';
+            else if (r < 0.65) type = 'coal';
+            else if (r < 0.85) type = 'iron';
+            else if (r < 0.95) type = 'gold';
+            else type = 'diamond';
+            blocks.push({ type, hp: 3, broken: false });
+        }
+
+        const blockEmojis = { stone: '🪨', coal: '🪨', iron: '⬜', gold: '🟨', diamond: '💎' };
+        const blockRewards = { stone: { coins: 0, score: 1 }, coal: { coins: 5, score: 1 }, iron: { coins: 10, score: 2 }, gold: { coins: 25, score: 5 }, diamond: { coins: 100, score: 10 } };
+
+        let coins = 120, score = 45;
+
+        function renderMine() {
+            let grid = document.getElementById('mineGrid');
+            grid.innerHTML = '';
+            for (let y = 0; y < 5; y++) {
+                for (let x = 0; x < 5; x++) {
+                    let idx = y * 5 + x;
+                    let cell = document.createElement('div');
+                    cell.className = 'mine-cell';
+                    if (x === player.x && y === player.y) {
+                        cell.classList.add('player');
+                        cell.textContent = '👷';
+                    } else if (blocks[idx].broken) {
+                        cell.classList.add('broken');
+                    } else {
+                        cell.textContent = blockEmojis[blocks[idx].type];
+                        if (blocks[idx].hp < 3) cell.textContent += '💔';
+                    }
+                    grid.appendChild(cell);
+                }
+            }
+            document.getElementById('coins').textContent = coins;
+            document.getElementById('score').textContent = score;
+        }
+
+        function movePlayer(dx, dy) {
+            let nx = player.x + dx;
+            let ny = player.y + dy;
+            if (nx >= 0 && nx < 5 && ny >= 0 && ny < 5) {
+                player.x = nx;
+                player.y = ny;
+                renderMine();
+            }
+        }
+
+        function hitBlock() {
+            let idx = player.y * 5 + player.x;
+            if (blocks[idx].broken) return;
+            blocks[idx].hp--;
+            if (blocks[idx].hp <= 0) {
+                blocks[idx].broken = true;
+                let r = blockRewards[blocks[idx].type];
+                coins += r.coins;
+                score += r.score;
+                alert(`💥 Блок разбит!\n💰 +${r.coins} монет\n⭐ +${r.score} баллов`);
+            }
+            renderMine();
+        }
+
+        function showTab(tab) {
+            document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+            document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('active'));
+            
+            if (tab === 'main') document.getElementById('screen-main').classList.add('active');
+            else if (tab === 'tasks') document.getElementById('screen-tasks').classList.add('active');
+            else if (tab === 'tournament') document.getElementById('screen-tournament').classList.add('active');
+            else if (tab === 'friends') document.getElementById('screen-friends').classList.add('active');
+            else if (tab === 'profile') document.getElementById('screen-profile').classList.add('active');
+            else if (tab === 'mine') document.getElementById('screen-mine').classList.add('active');
+            
+            let navMap = { main: 2, tasks: 0, tournament: 1, friends: 3, profile: 4, mine: 2 };
+            if (navMap[tab] !== undefined) {
+                document.querySelectorAll('.nav-btn')[navMap[tab]].classList.add('active');
+            }
+        }
+
+        function showSection(name) {
+            document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+            document.getElementById('section-' + name).classList.add('active');
+        }
+
+        function copyText(text) {
+            navigator.clipboard?.writeText(text);
+            alert('✅ Скопировано!');
+        }
+
+        function withdraw(type) {
+            let amt = parseFloat(document.getElementById('wdAmount').value);
+            let wallet = document.getElementById('wdWallet').value;
+            if (!amt || !wallet) return alert('❌ Заполните все поля');
+            if (type === 'rich') {
+                if (amt < 5000) return alert('❌ Минимум 5000 RICH');
+                let fee = amt * 0.1;
+                alert(`✅ Заявка на вывод!\n💰 Вы получите: ${amt - fee} RICH\n📬 ${wallet}`);
+            } else {
+                if (amt < 5) return alert('❌ Минимум 5 GRAM');
+                let fee = amt * 0.1;
+                alert(`✅ Заявка на вывод!\n💰 Вы получите: ${amt - fee} GRAM\n📬 ${wallet}`);
+            }
+        }
+
+        // Загрузка заданий
+        document.getElementById('tasksList').innerHTML = `
+            <div class="card"><p>🤖 Зайти в бота</p><p class="gold-text">💰 +10 RICH</p><button class="btn btn-blue" style="width:48%;display:inline-block">🔗 ЗАЙТИ</button><button class="btn btn-green" style="width:48%;display:inline-block">✅ ПРОВЕРИТЬ</button></div>
+            <div class="card"><p>📢 Подписка на канал</p><p class="gold-text">💰 +5 RICH</p><button class="btn btn-blue" style="width:48%;display:inline-block">🔗 ЗАЙТИ</button><button class="btn btn-green" style="width:48%;display:inline-block">✅ ПРОВЕРИТЬ</button></div>
+            <div class="card"><p>💬 Подписка на чат</p><p class="gold-text">💰 +3 RICH</p><button class="btn btn-blue" style="width:48%;display:inline-block">🔗 ЗАЙТИ</button><button class="btn btn-green" style="width:48%;display:inline-block">✅ ПРОВЕРИТЬ</button></div>
+        `;
+
+        document.getElementById('ticketsList').innerHTML = `
+            <div class="card"><p>🎟 Билет #1</p><p>💰 Цена: 100 RICH</p><p>🎫 Осталось: 45/50</p><p class="gold-text">🏆 Приз: 1000 RICH</p><button class="btn btn-gold">🎟 КУПИТЬ</button></div>
+            <div class="card"><p>🎟 Билет #2</p><p>💰 Цена: 50 RICH</p><p>🎫 Осталось: 28/100</p><p class="gold-text">🏆 Приз: 500 RICH</p><button class="btn btn-gold">🎟 КУПИТЬ</button></div>
+        `;
+
+        renderMine();
+    </script>
+</body>
+</html>
