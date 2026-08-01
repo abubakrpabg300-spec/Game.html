@@ -1,0 +1,624 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <title>⚔️ Rich Battle</title>
+    <style>
+        :root {
+            --bg: #06080d; --card: #111827; --gold: #f0b90b;
+            --green: #10b981; --red: #f85149; --blue: #6366f1;
+            --text: #e8e8e8; --sub: #8899aa;
+        }
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: 'Segoe UI', system-ui, sans-serif;
+            background: var(--bg); color: var(--text);
+            min-height: 100vh; max-width: 500px; margin: 0 auto;
+            padding: 8px 8px 100px 8px;
+            -webkit-tap-highlight-color: transparent; user-select: none;
+        }
+        .screen { display: none; }
+        .screen.active { display: block; animation: fadeIn 0.2s; }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(5px); } to { opacity: 1; transform: translateY(0); } }
+
+        .bottom-nav {
+            position: fixed; bottom: 8px; left: 50%; transform: translateX(-50%);
+            width: calc(100% - 16px); max-width: 484px;
+            background: #111827e8; backdrop-filter: blur(10px);
+            display: flex; padding: 6px; gap: 4px;
+            border-radius: 16px; border: 1px solid #1f2937; z-index: 100;
+        }
+        .nav-btn {
+            flex: 1; padding: 8px 4px; text-align: center;
+            border-radius: 12px; cursor: pointer; font-size: 9px;
+            color: #8899aa; border: none; background: transparent;
+        }
+        .nav-btn.active { background: var(--gold); color: #000; font-weight: bold; }
+        .nav-btn .icon { font-size: 20px; display: block; margin-bottom: 2px; }
+
+        .card {
+            background: var(--card); padding: 14px; border-radius: 14px;
+            margin: 8px 0; border: 1px solid #1f2937;
+        }
+        .card-gold { border-color: var(--gold); }
+
+        .btn {
+            padding: 14px; border-radius: 12px; border: none;
+            font-weight: 600; cursor: pointer; font-size: 14px;
+            width: 100%; margin: 4px 0; letter-spacing: 0.3px;
+        }
+        .btn:active { transform: scale(0.97); }
+        .btn-gold { background: var(--gold); color: #000; }
+        .btn-blue { background: var(--blue); color: #fff; }
+        .btn-green { background: var(--green); color: #fff; }
+        .btn-red { background: var(--red); color: #fff; }
+        .btn-dark { background: #1f2937; color: #fff; }
+        .btn-sm { padding: 8px 12px; font-size: 12px; width: auto; }
+
+        .input {
+            width: 100%; padding: 14px; border-radius: 10px;
+            border: 1px solid #1f2937; background: #0a0e14;
+            color: #fff; font-size: 15px; margin: 5px 0; outline: none;
+        }
+        .input:focus { border-color: var(--gold); }
+
+        .row { display: flex; gap: 8px; align-items: center; }
+        .col { flex: 1; }
+
+        .gold-text { color: var(--gold); font-weight: 600; }
+        .green-text { color: var(--green); }
+        .red-text { color: var(--red); }
+        .sub-text { color: var(--sub); font-size: 12px; }
+        .divider { border-top: 1px solid #1f2937; margin: 12px 0; }
+
+        .tab-row { display: flex; gap: 6px; margin: 8px 0; }
+        .tab-btn {
+            flex: 1; padding: 12px 8px; text-align: center;
+            background: #1f2937; border-radius: 10px;
+            cursor: pointer; font-size: 12px; color: #8899aa;
+            border: none; font-weight: 500;
+        }
+        .tab-btn.active { background: var(--gold); color: #000; font-weight: 700; }
+
+        .header-balance {
+            display: flex; justify-content: space-between;
+            padding: 4px 8px; font-size: 13px; color: var(--sub); margin-bottom: 6px;
+        }
+        .header-balance span { color: var(--gold); font-weight: 600; }
+
+        h3 { margin-bottom: 6px; font-size: 18px; }
+        h4 { margin: 8px 0 4px; font-size: 15px; }
+
+        .badge { background: var(--green); padding: 3px 10px; border-radius: 12px; font-size: 11px; color: #fff; }
+        .badge-locked { background: #1f2937; padding: 3px 10px; border-radius: 12px; font-size: 11px; color: #8899aa; }
+
+        .shop-item {
+            display: flex; justify-content: space-between; align-items: center;
+            padding: 10px 0;
+        }
+        .shop-icon { font-size: 28px; width: 40px; text-align: center; }
+
+        .hidden { display: none; }
+        .admin-only { display: none; }
+        .admin-only.visible { display: block; }
+
+        .chart-placeholder {
+            height: 120px; background: #1a1a2e; border-radius: 10px;
+            display: flex; align-items: flex-end; padding: 10px; gap: 4px;
+            margin: 8px 0;
+        }
+        .chart-bar {
+            flex: 1; background: var(--gold); border-radius: 3px 3px 0 0;
+            min-height: 10px; transition: height 0.3s;
+        }
+        .chart-bar.red { background: var(--red); }
+        .chart-bar.green { background: var(--green); }
+    </style>
+</head>
+<body>
+
+    <!-- ====== МАГАЗИН ====== -->
+    <div class="screen active" id="screen-shop">
+        <div class="header-balance">💰 <span id="sRich">0</span> RICH | 💵 <span id="sGram">0</span> GRAM</div>
+        <h3>🛒 МАГАЗИН</h3>
+        <div class="card">
+            <h4>🗡 ОРУЖИЕ</h4>
+            <div id="weaponsList"></div>
+        </div>
+        <div class="card">
+            <h4>🛡 БРОНЯ</h4>
+            <div id="armorList"></div>
+        </div>
+        <div class="card">
+            <h4>🧪 ЗЕЛЬЯ</h4>
+            <div class="shop-item"><span>❤️ Лечение</span><span class="gold-text">100 RICH</span><button class="btn btn-green btn-sm" onclick="buyItem('heal')">🛒</button></div>
+            <div class="shop-item"><span>⚡ Энергия</span><span class="gold-text">200 RICH</span><button class="btn btn-green btn-sm" onclick="buyItem('energy')">🛒</button></div>
+        </div>
+        <div class="card">
+            <h4>👑 ПРЕМИУМ (+10-15% атаки)</h4>
+            <div class="shop-item"><span>⭐ 7 дней</span><span class="gold-text">300 RICH</span><button class="btn btn-green btn-sm" onclick="buyItem('prem7')">🛒</button></div>
+            <div class="shop-item"><span>⭐ 30 дней</span><span class="gold-text">800 RICH</span><button class="btn btn-green btn-sm" onclick="buyItem('prem30')">🛒</button></div>
+            <div class="shop-item"><span>👑 Навсегда</span><span class="gold-text">5000 RICH</span><button class="btn btn-green btn-sm" onclick="buyItem('premL')">🛒</button></div>
+        </div>
+    </div>
+
+    <!-- ====== ЗАРАБОТОК ====== -->
+    <div class="screen" id="screen-earn">
+        <div class="header-balance">💰 <span id="eRich">0</span> RICH</div>
+        <h3>📋 ЗАРАБОТОК</h3>
+        <div class="tab-row">
+            <button class="tab-btn active" onclick="earnTab('tasks')">📋 Задания</button>
+            <button class="tab-btn" onclick="earnTab('bonus')">🎁 Бонус</button>
+        </div>
+        <div id="earnContent"></div>
+        <div class="card" style="margin-top:10px">
+            <h4>👥 РЕФЕРАЛЫ</h4>
+            <p>👤 Друзей: <span id="refCount">0</span> | 💰 +<span id="refEarn">0</span> RICH</p>
+            <p class="sub-text" style="word-break:break-all">🔗 t.me/RichBot?start=8684827145</p>
+            <button class="btn btn-blue" onclick="copyText('https://t.me/RichBot?start=8684827145')">📋 КОПИРОВАТЬ</button>
+            <p class="sub-text">📌 +10 RICH за 5 заданий друга | +5% от пополнений</p>
+        </div>
+    </div>
+
+    <!-- ====== ГЛАВНАЯ ====== -->
+    <div class="screen" id="screen-main">
+        <div class="header-balance">💰 <span id="mRich">0</span> RICH</div>
+        <h3>⚔️ RICH BATTLE</h3>
+        <div class="card">
+            <p>⭐ Уровень: <span id="lvl">1</span> | 📈 Рейтинг: <span id="rating">0</span></p>
+            <p>⚔️ Атака: <span id="atk">5</span> | 🛡 Защита: <span id="def">0</span></p>
+        </div>
+        <div class="card card-gold">
+            <h4>🏆 ТУРНИР</h4>
+            <div id="tournamentInfo">📭 Нет активных турниров</div>
+            <button class="btn btn-gold btn-sm" onclick="alert('Таблица лидеров')">📊 ТАБЛИЦА</button>
+        </div>
+        <div class="card" style="text-align:center">
+            <h4>⚔️ В БОЙ</h4>
+            <p class="sub-text">Победитель: +15-17 баллов</p>
+            <p class="sub-text">Проигравший: -8-10 баллов</p>
+            <button class="btn btn-gold" onclick="startBattle()">⚔️ В БОЙ</button>
+        </div>
+        <div class="card">
+            <h4>🏆 ТОП-5</h4>
+            <div id="top5">Загрузка...</div>
+        </div>
+    </div>
+
+    <!-- ====== БИРЖА ====== -->
+    <div class="screen" id="screen-market">
+        <div class="header-balance">💰 <span id="mkRich">0</span> RICH | 💵 <span id="mkGram">0</span> GRAM</div>
+        <h3>📊 БИРЖА RICH/GRAM</h3>
+        <div class="card">
+            <div class="chart-placeholder" id="chart"></div>
+            <p>💰 Цена: <b class="gold-text">100 RICH = 1 GRAM</b></p>
+            <p>📈 Изменение: <span class="green-text" id="priceChange">+0.0%</span></p>
+        </div>
+        <div class="card">
+            <h4>🟢 ПОКУПКА RICH</h4>
+            <input class="input" type="number" id="buyGram" placeholder="Сумма в GRAM">
+            <p class="sub-text">💰 Получите: <span id="buyResult">0</span> RICH (комиссия 5%)</p>
+            <button class="btn btn-green" onclick="buyRich()">🟢 КУПИТЬ</button>
+        </div>
+        <div class="card">
+            <h4>🔴 ПРОДАЖА RICH</h4>
+            <input class="input" type="number" id="sellRich" placeholder="Сумма в RICH">
+            <p class="sub-text">💰 Получите: <span id="sellResult">0</span> GRAM (комиссия 5%)</p>
+            <button class="btn btn-red" onclick="sellRich()">🔴 ПРОДАТЬ</button>
+        </div>
+        <div class="card">
+            <h4>📋 ИСТОРИЯ СДЕЛОК</h4>
+            <div id="tradeHistory" class="sub-text">Нет сделок</div>
+        </div>
+    </div>
+
+    <!-- ====== ПРОФИЛЬ ====== -->
+    <div class="screen" id="screen-profile">
+        <div class="header-balance">💰 <span id="pRich">0</span> RICH | 💵 <span id="pGram">0</span> GRAM</div>
+        <h3>👤 ПРОФИЛЬ</h3>
+        <div class="card">
+            <p>🆔 ID: 8684827145</p>
+            <p>⭐ Уровень: <span id="pLvl">1</span> | 📈 Рейтинг: <span id="pRating">0</span></p>
+        </div>
+        <div class="card card-gold">
+            <div class="row"><div class="col"><p class="sub-text">💰 RICH</p><p class="gold-text" style="font-size:22px" id="profRich">0</p></div><div class="col"><p class="sub-text">💵 GRAM</p><p class="gold-text" style="font-size:22px" id="profGram">0</p></div></div>
+        </div>
+        <div class="card">
+            <h4>📋 ИСТОРИЯ ПОПОЛНЕНИЙ</h4>
+            <div id="depHistory" class="sub-text">Нет пополнений</div>
+        </div>
+        <div class="card">
+            <h4>💸 ИСТОРИЯ ВЫВОДОВ</h4>
+            <div id="wdHistory" class="sub-text">Нет выводов</div>
+        </div>
+        <button class="btn btn-gold" onclick="showSection('deposit')">💎 ПОПОЛНИТЬ</button>
+        <button class="btn btn-blue" onclick="showSection('withdraw')">💸 ВЫВЕСТИ</button>
+        <button class="btn btn-dark" onclick="showSection('promo')">🔑 ПРОМОКОД</button>
+        <p class="sub-text" style="text-align:center;margin-top:8px" id="adminClick">🆔 8684827145</p>
+    </div>
+
+    <!-- ====== ПОПОЛНЕНИЕ ====== -->
+    <div class="screen" id="section-deposit">
+        <h3>💎 ПОПОЛНЕНИЕ</h3>
+        <div class="card">
+            <p>📌 1 TON ≈ 100 RICH</p><p>📌 Минимум: 1 TON</p>
+            <p>💼 Кошелёк:</p>
+            <div class="input" style="font-size:11px">UQDmNY1TIMIgnALOpAyJ4_XO2uroUNLFVRwGie5AEwzccaps</div>
+            <button class="btn btn-blue" onclick="copyText('UQDmNY1TIMIgnALOpAyJ4_XO2uroUNLFVRwGie5AEwzccaps')">📋 КОПИРОВАТЬ</button>
+            <p>🆔 Ваш ID: <b>8684827145</b></p>
+            <button class="btn btn-blue" onclick="copyText('8684827145')">📋 КОПИРОВАТЬ ID</button>
+            <p class="red-text" style="margin-top:8px">⚠️ Укажите ID в комментарии к переводу!</p>
+        </div>
+        <button class="btn btn-dark" onclick="showTab('profile')">🔙 НАЗАД</button>
+    </div>
+
+    <!-- ====== ВЫВОД ====== -->
+    <div class="screen" id="section-withdraw">
+        <h3>💸 ВЫВОД GRAM</h3>
+        <div class="card"><p>💵 GRAM: <span id="wdGram">0</span></p><p class="sub-text">📌 Курс: 100 RICH = 1 GRAM | Комиссия: 10% | Мин: 5 GRAM</p></div>
+        <input class="input" type="number" id="wdAmount" placeholder="Сумма (мин 5 GRAM)">
+        <input class="input" type="text" id="wdWallet" placeholder="Gram (TON) кошелёк">
+        <p class="sub-text">💰 Вы получите: <span id="wdResult">0</span> GRAM</p>
+        <button class="btn btn-blue" onclick="withdrawGram()">💸 ПОДТВЕРДИТЬ</button>
+        <button class="btn btn-dark" onclick="showTab('profile')">🔙 НАЗАД</button>
+    </div>
+
+    <!-- ====== ПРОМОКОД ====== -->
+    <div class="screen" id="section-promo">
+        <h3>🔑 ПРОМОКОД</h3>
+        <input class="input" id="promoInput" placeholder="Введите промокод">
+        <button class="btn btn-gold" onclick="activatePromo()">🔓 АКТИВИРОВАТЬ</button>
+        <button class="btn btn-dark" onclick="showTab('profile')">🔙 НАЗАД</button>
+    </div>
+
+    <!-- ====== АДМИН-ПАНЕЛЬ ====== -->
+    <div class="screen" id="section-admin">
+        <h3>🔧 АДМИН-ПАНЕЛЬ</h3>
+        <div class="card"><button class="btn btn-dark" onclick="alert('Список пользователей')">👤 Все пользователи</button></div>
+        <div class="card"><input class="input" placeholder="ID игрока"><button class="btn btn-blue" onclick="alert('Инфо')">🔍 Поиск</button></div>
+        <div class="card"><input class="input" placeholder="ID СУММА"><button class="btn btn-green" onclick="alert('Зачислено')">➕ ЗАЧИСЛИТЬ</button><button class="btn btn-red" onclick="alert('Снято')">➖ СНЯТЬ</button></div>
+        <div class="card">
+            <h4>📋 ДОБАВИТЬ ЗАДАНИЕ</h4>
+            <input class="input" placeholder="Название"><input class="input" placeholder="Ссылка"><input class="input" placeholder="Награда RICH">
+            <button class="btn btn-green">✅ ДОБАВИТЬ</button>
+        </div>
+        <div class="card">
+            <h4>🏆 ДОБАВИТЬ ТУРНИР</h4>
+            <input class="input" placeholder="Название"><input class="input" placeholder="Дата конца"><input class="input" placeholder="Кол-во мест">
+            <p class="sub-text">Призы (💎RICH 🖼NFT 🔗Ссылка 🎁Подарок)</p>
+            <button class="btn btn-green">✅ СОЗДАТЬ</button>
+        </div>
+        <div class="card">
+            <h4>🎫 ПРОМОКОД</h4>
+            <input class="input" placeholder="Код"><input class="input" placeholder="Награда RICH"><input class="input" placeholder="Активаций">
+            <button class="btn btn-green">✅ СОЗДАТЬ</button>
+        </div>
+        <div class="card"><h4>💸 ЗАЯВКИ НА ВЫВОД</h4><p class="sub-text">Нет заявок</p></div>
+        <div class="card"><h4>📢 РАССЫЛКА</h4><input class="input" placeholder="Текст"><button class="btn btn-blue">📢 ОТПРАВИТЬ</button></div>
+        <button class="btn btn-dark" onclick="showTab('profile')">🔙 НАЗАД</button>
+    </div>
+
+    <!-- Нижнее меню -->
+    <div class="bottom-nav">
+        <button class="nav-btn active" onclick="showTab('shop')"><span class="icon">🛒</span>Магазин</button>
+        <button class="nav-btn" onclick="showTab('earn')"><span class="icon">📋</span>Заработок</button>
+        <button class="nav-btn" onclick="showTab('main')"><span class="icon">🏠</span>Главная</button>
+        <button class="nav-btn" onclick="showTab('market')"><span class="icon">📊</span>Биржа</button>
+        <button class="nav-btn" onclick="showTab('profile')"><span class="icon">👤</span>Профиль</button>
+    </div>
+
+    <script>
+        // ====== ДАННЫЕ ======
+        const WEAPONS = [
+            { name: '🗡 Кинжал', price: 100, atk: 5 },
+            { name: '⚔️ Меч', price: 300, atk: 15 },
+            { name: '🪓 Топор', price: 500, atk: 30 },
+            { name: '🔥 Огненный меч', price: 1000, atk: 50 },
+            { name: '💀 Тёмный клинок', price: 1500, atk: 70 },
+            { name: '⚡ Молния', price: 2000, atk: 90 },
+            { name: '👑 Экскалибур', price: 5000, atk: 150 }
+        ];
+        const ARMORS = [
+            { name: '🛡 Щит', price: 100, def: 10 },
+            { name: '⛓ Кольчуга', price: 300, def: 25 },
+            { name: '🏰 Латы', price: 500, def: 50 },
+            { name: '🐉 Драконья броня', price: 1000, def: 80 },
+            { name: '💎 Алмазная броня', price: 2000, def: 120 }
+        ];
+
+        const DEFAULT_PLAYER = {
+            rich: 0, gram: 0, level: 1, rating: 0, exp: 0,
+            weapon: null, armor: null, hp: 100, maxHp: 100,
+            bonusDay: 1, bonusTime: 0,
+            premType: null, premExpire: 0,
+            tradeHistory: [], depHistory: [], wdHistory: [],
+            promosUsed: [], refs: 0, refEarn: 0, tasks: 0
+        };
+
+        let player = JSON.parse(localStorage.getItem('richBattle')) || DEFAULT_PLAYER;
+        if (!localStorage.getItem('richBattle')) localStorage.setItem('richBattle', JSON.stringify(player));
+
+        function save() { localStorage.setItem('richBattle', JSON.stringify(player)); updateAllUI(); }
+
+        function getAtk() {
+            let base = 5;
+            if (player.weapon) base += player.weapon.atk;
+            if (player.premType && Date.now() < player.premExpire) {
+                if (player.premType === 'L') base *= 1.15;
+                else base *= 1.10;
+            }
+            return Math.floor(base);
+        }
+
+        function getDef() {
+            let base = player.armor ? player.armor.def : 0;
+            return base;
+        }
+
+        function showTab(tab) {
+            document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+            document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('active'));
+            let screens = { shop:'screen-shop', earn:'screen-earn', main:'screen-main', market:'screen-market', profile:'screen-profile' };
+            if (screens[tab]) document.getElementById(screens[tab]).classList.add('active');
+            let navMap = { shop:0, earn:1, main:2, market:3, profile:4 };
+            if (navMap[tab] !== undefined) document.querySelectorAll('.nav-btn')[navMap[tab]].classList.add('active');
+            if (tab === 'shop') renderShop();
+            if (tab === 'earn') earnTab('tasks');
+            if (tab === 'main') renderMain();
+            if (tab === 'market') renderMarket();
+            if (tab === 'profile') renderProfile();
+            updateAllUI();
+        }
+
+        function showSection(name) {
+            document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+            document.getElementById('section-' + name).classList.add('active');
+            if (name === 'withdraw') document.getElementById('wdGram').textContent = player.gram;
+            if (name === 'admin') renderAdmin();
+        }
+
+        function renderShop() {
+            let html = '';
+            WEAPONS.forEach((w, i) => {
+                let owned = player.weapon && player.weapon.name === w.name;
+                html += `<div class="shop-item"><span class="shop-icon">${w.name.split(' ')[0]}</span><span>${w.name} (+${w.atk} атаки)</span><span class="gold-text">${w.price} RICH</span>${owned ? '<span class="badge">✅</span>' : `<button class="btn btn-green btn-sm" onclick="buyWeapon(${i})">🛒</button>`}</div>`;
+            });
+            document.getElementById('weaponsList').innerHTML = html;
+            
+            html = '';
+            ARMORS.forEach((a, i) => {
+                let owned = player.armor && player.armor.name === a.name;
+                html += `<div class="shop-item"><span class="shop-icon">${a.name.split(' ')[0]}</span><span>${a.name} (+${a.def} защиты)</span><span class="gold-text">${a.price} RICH</span>${owned ? '<span class="badge">✅</span>' : `<button class="btn btn-green btn-sm" onclick="buyArmor(${i})">🛒</button>`}</div>`;
+            });
+            document.getElementById('armorList').innerHTML = html;
+        }
+
+        function buyWeapon(i) {
+            let w = WEAPONS[i];
+            if (player.rich < w.price) return alert('❌ Недостаточно RICH');
+            player.rich -= w.price;
+            player.weapon = { name: w.name, atk: w.atk };
+            save();
+            renderShop();
+            alert(`✅ Куплено: ${w.name}`);
+        }
+
+        function buyArmor(i) {
+            let a = ARMORS[i];
+            if (player.rich < a.price) return alert('❌ Недостаточно RICH');
+            player.rich -= a.price;
+            player.armor = { name: a.name, def: a.def };
+            save();
+            renderShop();
+            alert(`✅ Куплено: ${a.name}`);
+        }
+
+        function buyItem(type) {
+            let prices = { heal:100, energy:200, prem7:300, prem30:800, premL:5000 };
+            if (player.rich < prices[type]) return alert('❌ Недостаточно RICH');
+            player.rich -= prices[type];
+            if (type === 'heal') player.hp = player.maxHp;
+            if (type === 'prem7') { player.premType = '7'; player.premExpire = Date.now() + 7*86400000; }
+            if (type === 'prem30') { player.premType = '30'; player.premExpire = Date.now() + 30*86400000; }
+            if (type === 'premL') { player.premType = 'L'; player.premExpire = Infinity; }
+            save();
+            alert('✅ Куплено!');
+        }
+
+        function earnTab(tab) {
+            let btns = document.querySelectorAll('#screen-earn .tab-btn');
+            btns.forEach(b => b.classList.remove('active'));
+            if (tab === 'tasks') btns[0].classList.add('active');
+            else btns[1].classList.add('active');
+            let html = '';
+            if (tab === 'tasks') {
+                html = '<div class="card"><p class="sub-text">📋 Задания добавляет администратор</p></div>';
+            } else {
+                let bonuses = [3,5,7,10,15,20,30];
+                let today = player.bonusDay;
+                let bonus = bonuses[(today-1)%7];
+                html = `<div class="card" style="text-align:center"><p style="font-size:60px">🎁</p>`;
+                bonuses.forEach((b,i) => html += `<p>📅 День ${i+1}: +${b} RICH ${i+1===today?'👈':''}</p>`);
+                html += `<p>🔥 Серия: ${today} дня | 💰 Сегодня: +${bonus} RICH</p>`;
+                html += `<button class="btn btn-gold" onclick="claimBonus(${bonus})">🎁 ЗАБРАТЬ</button></div>`;
+            }
+            document.getElementById('earnContent').innerHTML = html;
+        }
+
+        function claimBonus(amt) {
+            player.rich += amt;
+            player.bonusDay++;
+            player.bonusTime = Date.now();
+            save();
+            earnTab('bonus');
+            alert(`✅ +${amt} RICH`);
+        }
+
+        function renderMain() {
+            document.getElementById('lvl').textContent = player.level;
+            document.getElementById('rating').textContent = player.rating;
+            document.getElementById('atk').textContent = getAtk();
+            document.getElementById('def').textContent = getDef();
+            updateTop5();
+        }
+
+        function startBattle() {
+            let win = Math.random() > 0.5;
+            if (win) {
+                let pts = Math.floor(Math.random()*3)+15;
+                player.rating += pts;
+                player.rich += 10;
+                player.exp += 20;
+                alert(`🎉 ПОБЕДА!\n⭐ +${pts} баллов\n💰 +10 RICH`);
+            } else {
+                let pts = Math.floor(Math.random()*3)+8;
+                player.rating = Math.max(0, player.rating - pts);
+                alert(`💀 ПОРАЖЕНИЕ\n⭐ -${pts} баллов`);
+            }
+            if (player.exp >= player.level * 50) {
+                player.exp -= player.level * 50;
+                player.level++;
+                alert(`⭐ УРОВЕНЬ ${player.level}!`);
+            }
+            save();
+            renderMain();
+        }
+
+        function updateTop5() {
+            let top = [
+                { name:'Player_123', rating:2500 },
+                { name:'Player_456', rating:2100 },
+                { name:'Player_789', rating:1889 },
+                { name:'Вы', rating:player.rating },
+                { name:'Player_222', rating:1200 }
+            ];
+            top.sort((a,b) => b.rating - a.rating);
+            let html = '';
+            let medals = ['🥇','🥈','🥉','#4','#5'];
+            top.forEach((p,i) => html += `${medals[i]} ${p.name} — ⭐ ${p.rating}\n`);
+            document.getElementById('top5').textContent = html;
+        }
+
+        function renderMarket() {
+            // Симуляция графика
+            let chart = document.getElementById('chart');
+            chart.innerHTML = '';
+            let price = 100 + Math.random()*20 - 10;
+            for (let i=0; i<20; i++) {
+                let bar = document.createElement('div');
+                bar.className = 'chart-bar ' + (Math.random()>0.5 ? 'green' : 'red');
+                bar.style.height = (20 + Math.random()*80) + 'px';
+                chart.appendChild(bar);
+            }
+            let change = ((Math.random()*4)-2).toFixed(1);
+            document.getElementById('priceChange').textContent = (change>0?'+':'') + change + '%';
+            document.getElementById('priceChange').className = change>=0 ? 'green-text' : 'red-text';
+        }
+
+        function buyRich() {
+            let gram = parseFloat(document.getElementById('buyGram').value);
+            if (!gram || gram <= 0) return alert('❌ Введите сумму');
+            if (player.gram < gram) return alert('❌ Недостаточно GRAM');
+            let rich = gram * 95;
+            player.gram -= gram;
+            player.rich += rich;
+            player.tradeHistory.push({ type:'buy', gram, rich, time: new Date().toLocaleDateString() });
+            if (player.tradeHistory.length > 5) player.tradeHistory.shift();
+            save();
+            updateAllUI();
+            alert(`✅ Куплено: +${rich} RICH`);
+        }
+
+        function sellRich() {
+            let rich = parseFloat(document.getElementById('sellRich').value);
+            if (!rich || rich <= 0) return alert('❌ Введите сумму');
+            if (player.rich < rich) return alert('❌ Недостаточно RICH');
+            let gram = (rich / 100) * 0.95;
+            player.rich -= rich;
+            player.gram += gram;
+            player.tradeHistory.push({ type:'sell', rich, gram, time: new Date().toLocaleDateString() });
+            if (player.tradeHistory.length > 5) player.tradeHistory.shift();
+            save();
+            updateAllUI();
+            alert(`✅ Продано: +${gram.toFixed(2)} GRAM`);
+        }
+
+        function renderProfile() {
+            document.getElementById('pLvl').textContent = player.level;
+            document.getElementById('pRating').textContent = player.rating;
+            document.getElementById('profRich').textContent = player.rich;
+            document.getElementById('profGram').textContent = player.gram;
+            
+            let depHtml = player.depHistory.length ? player.depHistory.slice(-3).reverse().map(h => `💎 ${h}`).join('<br>') : 'Нет пополнений';
+            document.getElementById('depHistory').innerHTML = depHtml;
+            
+            let wdHtml = player.wdHistory.length ? player.wdHistory.slice(-3).reverse().map(h => `💸 ${h}`).join('<br>') : 'Нет выводов';
+            document.getElementById('wdHistory').innerHTML = wdHtml;
+
+            // Админ-клик (5 нажатий)
+            let clicks = parseInt(localStorage.getItem('adminClicks')||'0');
+            document.getElementById('adminClick').onclick = function() {
+                clicks++;
+                localStorage.setItem('adminClicks', clicks);
+                if (clicks >= 5) {
+                    localStorage.setItem('adminClicks', '0');
+                    showSection('admin');
+                }
+            };
+        }
+
+        function withdrawGram() {
+            let amt = parseFloat(document.getElementById('wdAmount').value);
+            let wallet = document.getElementById('wdWallet').value;
+            if (!amt || amt < 5) return alert('❌ Минимум 5 GRAM');
+            if (!wallet) return alert('❌ Введите кошелёк');
+            if (player.gram < amt) return alert('❌ Недостаточно GRAM');
+            let fee = amt * 0.1;
+            let total = amt - fee;
+            player.gram -= amt;
+            player.wdHistory.push(`-${amt} GRAM → ${wallet.slice(0,10)}... | ${new Date().toLocaleDateString()}`);
+            save();
+            updateAllUI();
+            alert(`✅ Заявка создана!\n💰 ${total.toFixed(2)} GRAM\n📬 ${wallet}\n⏳ Ожидайте`);
+        }
+
+        function activatePromo() {
+            let code = document.getElementById('promoInput').value.trim().toUpperCase();
+            if (!code) return alert('❌ Введите код');
+            if (player.promosUsed.includes(code)) return alert('❌ Уже использован');
+            player.rich += 50;
+            player.promosUsed.push(code);
+            player.depHistory.push(`+50 RICH (промокод ${code}) | ${new Date().toLocaleDateString()}`);
+            save();
+            updateAllUI();
+            alert('✅ +50 RICH!');
+        }
+
+        function updateAllUI() {
+            let map = {
+                sRich: player.rich, sGram: player.gram,
+                eRich: player.rich, eGram: player.gram,
+                mRich: player.rich, mGram: player.gram,
+                mkRich: player.rich, mkGram: player.gram,
+                pRich: player.rich, pGram: player.gram,
+                wdGram: player.gram,
+                refCount: player.refs, refEarn: player.refEarn
+            };
+            for (let [id, val] of Object.entries(map)) {
+                let el = document.getElementById(id);
+                if (el) el.textContent = typeof val === 'number' ? val.toFixed ? val : val : val;
+            }
+            // Торговля
+            let th = document.getElementById('tradeHistory');
+            if (th) th.innerHTML = player.tradeHistory.length ? player.tradeHistory.slice(-3).reverse().map(t => t.type==='buy'?`🟢 +${t.rich} RICH`:`🔴 +${t.gram.toFixed(2)} GRAM`).join('<br>') : 'Нет сделок';
+        }
+
+        function copyText(t) { navigator.clipboard?.writeText(t); alert('✅ Скопировано!'); }
+
+        // Старт
+        renderShop();
+        updateAllUI();
+    </script>
+</body>
+              </html>
