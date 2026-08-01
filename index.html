@@ -1,0 +1,184 @@
+import telebot
+from telebot.types import InlineKeyboardMarkup, InlineKeyboardButton, ReplyKeyboardMarkup, KeyboardButton
+import json
+
+# --- НАСТРОЙКИ ---
+BOT_TOKEN = "ВСТАВЬТЕ_СЮДА_СВОЙ_ТОКЕН_ОТ_BOTFATHER"
+ADMIN_ID = 123456789 # Ваш ID для админ-панели (необязательно)
+GAME_VERSION = "v1.2 Pro"
+
+# --- ХРАНИЛИЩЕ ДАННЫХ (БД) ---
+# В реальном боте используйте базу данных (например, SQLite или PostgreSQL)
+# Здесь используется простой словарь для примера.
+db = {
+    "users": {
+        # user_id: { "name": "...", "gold": 1000, "energy": 20, "exp": 150, "lvl": 3, "rating": 1889, "items": {} }
+    }
+}
+
+bot = telebot.TeleBot(BOT_TOKEN)
+
+# --- ВСПОМОГАТЕЛЬНЫЕ ФУНКЦИИ ---
+
+def get_user(user_id):
+    """Получает данные пользователя из БД или создает нового"""
+    if user_id not in db["users"]:
+        db["users"][user_id] = {
+            "name": f"Player_{user_id}",
+            "gold": 3376,
+            "energy": 22,
+            "exp": 756,
+            "lvl": 14,
+            "rating": 1889,
+            "items": {"sword": True, "shield": True} # Пример инвентаря
+        }
+    return db["users"][user_id]
+
+def get_top_players():
+    """Формирует список топ-5 игроков по рейтингу"""
+    sorted_users = sorted(db["users"].values(), key=lambda x: x["rating"], reverse=True)
+    top_list = "🏆 **ТОП-5 ЛИДЕРОВ** 🏆\n\n"
+    for i, user in enumerate(sorted_users[:5]):
+        medal = "🥇" if i == 0 else "🥈" if i == 1 else "🥉" if i == 2 else f"#{i+1}"
+        top_list += f"{medal} {user['name']} — 💰 {user['rating']}\n"
+    return top_list
+
+# --- ОБРАБОТЧИКИ КОМАНД ---
+
+@bot.message_handler(commands=['start', 'menu', 'help'])
+def send_welcome(message):
+    """Отправляет главное меню бота"""
+    user = get_user(message.from_user.id)
+    
+    # Формируем текст статуса
+    status_text = (
+        f"👤 Игрок: **{user['name']}** | Уровень: **{user['lvl']}**\n"
+        f"💰 Золото: **{user['gold']}** | ⚡ Энергия: **{user['energy']}/25**\n"
+        f"📈 Рейтинг: **{user['rating']}**\n"
+        f"─────────────────"
+    )
+    
+    # Клавиатура
+    markup = InlineKeyboardMarkup(row_width=2)
+    btn_play = InlineKeyboardButton("⚔️ ИГРАТЬ (Битва)", callback_data="menu_battle")
+    btn_inv = InlineKeyboardButton("🎒 ИНВЕНТАРЬ", callback_data="menu_inventory")
+    btn_shop = InlineKeyboardButton("🎁 СУНДУКИ (Магазин)", callback_data="menu_shop")
+    btn_promo = InlineKeyboardButton("🎟️ ПРОМОКОД", callback_data="menu_promo")
+    btn_rating = InlineKeyboardButton("🏆 РЕЙТИНГ (ТОП)", callback_data="menu_rating")
+    btn_wallet = InlineKeyboardButton("👛 КОШЕЛЕК / ПРОФИЛЬ", callback_data="menu_wallet")
+    
+    markup.add(btn_play, btn_inv)
+    markup.add(btn_shop, btn_promo)
+    markup.add(btn_rating, btn_wallet)
+
+    # Фото главного экрана (заглушка)
+    # В реальном боте можно загружать фото сундука или арены, например:
+    # bot.send_photo(message.chat.id, photo=open('images/main_menu.png', 'rb'), caption=status_text, reply_markup=markup, parse_mode='Markdown')
+    
+    if message.text == '/start':
+        bot.send_message(message.chat.id, f"👋 Добро пожаловать в новую игру!\n\n{status_text}", reply_markup=markup, parse_mode='Markdown')
+    else:
+        bot.edit_message_text(chat_id=message.chat.id, message_id=message.message_id, text=status_text, reply_markup=markup, parse_mode='Markdown')
+
+
+@bot.callback_query_handler(func=lambda call: call.data.startswith('menu_'))
+def handle_main_menu(call):
+    """Обрабатывает нажатия кнопок главного меню"""
+    user_id = call.from_user.id
+    user = get_user(user_id)
+    chat_id = call.message.chat.id
+    message_id = call.message.message_id
+    
+    markup = InlineKeyboardMarkup()
+    markup.add(InlineKeyboardButton("🔙 Назад в главное меню", callback_data="menu_back"))
+
+    if call.data == "menu_battle":
+        bot.edit_message_text(chat_id=chat_id, message_id=message_id, text=f"⚔️ **ВЫБОР БИТВЫ** ⚔️\n\nВыберите тип боя:\n\n💰 Золото: {user['gold']}", reply_markup=get_battle_keyboard(), parse_mode='Markdown')
+
+    elif call.data == "menu_inventory":
+        # Показываем пример инвентаря (сетка предметов)
+        items_text = f"🎒 **ИНВЕНТАРЬ** 🎒\n\n"
+        items_text += f"🎩 Шляпа: Да\n⚔️ Меч: Да\n🛡️ Щит: Да\n"
+        items_text += f"─────────────────\n\nВсего предметов: 3"
+        bot.edit_message_text(chat_id=chat_id, message_id=message_id, text=items_text, reply_markup=markup, parse_mode='Markdown')
+
+    elif call.data == "menu_shop":
+         # Показываем пример магазина (сундуки)
+        shop_text = f"🎁 **МАГАЗИН (СУНДУКИ)** 🎁\n\n"
+        shop_text += f"Обычный сундук: 499 KGift\nНеобычный сундук: 1500 KGift\n"
+        shop_text += f"─────────────────\n\nВаш баланс: 3376 KGift"
+        
+        markup_shop = InlineKeyboardMarkup()
+        markup_shop.add(InlineKeyboardButton("Обычный (499)", callback_data="buy_chest_499"))
+        markup_shop.add(InlineKeyboardButton("Необычный (1500)", callback_data="buy_chest_1500"))
+        markup_shop.add(InlineKeyboardButton("🔙 Назад", callback_data="menu_back"))
+        
+        bot.edit_message_text(chat_id=chat_id, message_id=message_id, text=shop_text, reply_markup=markup_shop, parse_mode='Markdown')
+
+    elif call.data == "menu_promo":
+        bot.edit_message_text(chat_id=chat_id, message_id=message_id, text="🎟️ **ПРОМОКОД** 🎟️\n\nВведите промокод в чат (например: `START2024`):", reply_markup=markup, parse_mode='Markdown')
+
+    elif call.data == "menu_rating":
+        bot.edit_message_text(chat_id=chat_id, message_id=message_id, text=get_top_players(), reply_markup=markup, parse_mode='Markdown')
+
+    elif call.data == "menu_wallet":
+        wallet_text = f"👛 **КОШЕЛЕК / ПРОФИЛЬ** 👛\n\nID: `{user_id}`\n\nTON Wallet: `UQB8C...XJvdp`\n💰 Баланс: 0.1970 GRAM\n─────────────────"
+        bot.edit_message_text(chat_id=chat_id, message_id=message_id, text=wallet_text, reply_markup=markup, parse_mode='Markdown')
+
+    elif call.data == "menu_back":
+        send_welcome(call.message)
+
+# --- ПОДМЕНЮ ---
+
+def get_battle_keyboard():
+    markup = InlineKeyboardMarkup(row_width=2)
+    markup.add(InlineKeyboardButton("🎯 Обычный бой (по уровню)", callback_data="battle_normal"),
+               InlineKeyboardButton("🏆 Рейтинговый бой (по рейтингу)", callback_data="battle_ranked"))
+    markup.add(InlineKeyboardButton("🔙 Назад", callback_data="menu_back"))
+    return markup
+
+@bot.callback_query_handler(func=lambda call: call.data.startswith('battle_'))
+def handle_battle_choice(call):
+    chat_id = call.message.chat.id
+    message_id = call.message.message_id
+    markup = InlineKeyboardMarkup()
+    markup.add(InlineKeyboardButton("🔙 Назад к выбору боя", callback_data="menu_battle"))
+    
+    if call.data == "battle_normal":
+        bot.edit_message_text(chat_id=chat_id, message_id=message_id, text="⚔️ Обычный бой. Поиск противника...\n\n(Здесь будет логика боя)", reply_markup=markup, parse_mode='Markdown')
+    elif call.data == "battle_ranked":
+        bot.edit_message_text(chat_id=chat_id, message_id=message_id, text="🏆 Рейтинговый бой. Поиск противника...\n\n(Здесь будет логика боя)", reply_markup=markup, parse_mode='Markdown')
+
+@bot.callback_query_handler(func=lambda call: call.data.startswith('buy_chest_'))
+def handle_chest_purchase(call):
+    chat_id = call.message.chat.id
+    user = get_user(call.from_user.id)
+    markup = InlineKeyboardMarkup()
+    markup.add(InlineKeyboardButton("🔙 Назад в магазин", callback_data="menu_shop"))
+
+    price = int(call.data.split('_')[-1])
+    if user["gold"] >= price:
+        user["gold"] -= price
+        bot.answer_callback_query(call.id, f"✅ Успешная покупка! Золото: {user['gold']}", show_alert=True)
+        bot.edit_message_text(chat_id=chat_id, message_id=call.message.message_id, text=f"🎉 **ПОКУПКА УСПЕШНА!** 🎉\n\nВы купили сундук за {price} золота.\n\nВам выпал предмет: Зелье опыта x1\n\nВаш баланс: {user['gold']}", reply_markup=markup, parse_mode='Markdown')
+    else:
+         bot.answer_callback_query(call.id, f"❌ Недостаточно золота!", show_alert=True)
+
+
+@bot.message_handler(func=lambda message: True)
+def handle_all_messages(message):
+    """Обрабатывает текстовые сообщения (промокоды и т.д.)"""
+    if message.text.startswith('/'):
+        bot.reply_to(message, "🚫 Неизвестная команда. Используйте /start или кнопки меню.")
+    else:
+         # Пример обработки промокода
+        if message.text.strip().upper() == "START2024":
+            user = get_user(message.from_user.id)
+            user["gold"] += 1000
+            bot.reply_to(message, f"🎁 ПРОМОКОД АКТИВИРОВАН!\n\nВам начислено 1000 золота. Ваш баланс: {user['gold']}")
+        else:
+            bot.reply_to(message, "⌨️ Вы ввели: " + message.text)
+
+# --- ЗАПУСК ---
+print(f"🚀 Бот запущен...\nВерсия: {GAME_VERSION}")
+bot.infinity_polling()
