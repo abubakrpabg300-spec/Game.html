@@ -1,0 +1,458 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>⚔️ Rich Battle PvP</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: 'Segoe UI', system-ui, sans-serif;
+            background: linear-gradient(145deg, #0b0e14 0%, #1a1f2e 100%);
+            color: #e8e8e8; min-height: 100vh; max-width: 500px; margin: 0 auto;
+            padding: 12px 12px 100px 12px;
+        }
+        .screen { display: none; animation: fade 0.25s ease; }
+        .screen.active { display: block; }
+        @keyframes fade { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: translateY(0); } }
+
+        .card {
+            background: rgba(20, 28, 45, 0.85); backdrop-filter: blur(10px);
+            border: 1px solid rgba(255,255,255,0.06); border-radius: 20px;
+            padding: 16px; margin: 10px 0; box-shadow: 0 8px 24px rgba(0,0,0,0.5);
+        }
+        .card-gold { border-color: #f0b90b; background: rgba(240,185,11,0.08); }
+        .gold { color: #f0b90b; font-weight: 600; }
+        .green { color: #10b981; }
+        .red { color: #f85149; }
+        .sub { color: #8899aa; font-size: 13px; }
+
+        .btn {
+            padding: 14px; border-radius: 14px; border: none;
+            font-weight: 600; font-size: 15px; width: 100%; cursor: pointer;
+            margin: 5px 0; transition: 0.15s;
+        }
+        .btn:active { transform: scale(0.96); }
+        .btn-gold { background: #f0b90b; color: #000; }
+        .btn-green { background: #10b981; color: #fff; }
+        .btn-red { background: #f85149; color: #fff; }
+        .btn-blue { background: #6366f1; color: #fff; }
+        .btn-dark { background: #2a3441; color: #fff; }
+        .btn-sm { padding: 8px 12px; font-size: 13px; width: auto; }
+
+        .input {
+            width: 100%; padding: 14px; border-radius: 12px;
+            border: 1px solid #2a3441; background: #0f141f;
+            color: #fff; font-size: 15px; margin: 6px 0; outline: none;
+        }
+        .input:focus { border-color: #f0b90b; }
+
+        .row { display: flex; gap: 10px; align-items: center; }
+        .col { flex: 1; }
+        .divider { border-top: 1px solid #2a3441; margin: 12px 0; }
+
+        .tab-btn {
+            flex: 1; padding: 10px; text-align: center; border-radius: 12px;
+            background: #1a2233; border: none; color: #8899aa; font-weight: 500;
+            cursor: pointer; transition: 0.15s;
+        }
+        .tab-btn.active { background: #f0b90b; color: #000; font-weight: 700; }
+
+        .bottom-nav {
+            position: fixed; bottom: 10px; left: 50%; transform: translateX(-50%);
+            width: calc(100% - 24px); max-width: 476px;
+            background: rgba(15, 20, 31, 0.92); backdrop-filter: blur(12px);
+            display: flex; padding: 6px; gap: 4px; border-radius: 18px;
+            border: 1px solid #2a3441; z-index: 100;
+        }
+        .nav-btn {
+            flex: 1; padding: 8px 4px; text-align: center; border-radius: 14px;
+            cursor: pointer; font-size: 10px; color: #8899aa;
+            border: none; background: transparent;
+        }
+        .nav-btn.active { background: #f0b90b; color: #000; font-weight: 700; }
+        .nav-btn .icon { font-size: 22px; display: block; margin-bottom: 2px; }
+
+        /* Оверлей боя */
+        #battleOverlay {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0,0,0,0.9); z-index: 999; display: none;
+            align-items: center; justify-content: center; flex-direction: column;
+        }
+        #battleOverlay.active { display: flex; }
+        #battleTimer { font-size: 80px; font-weight: 700; color: #f0b90b; }
+        #battleResult { font-size: 28px; margin-top: 20px; text-align: center; }
+        #battleOpponent { font-size: 18px; color: #8899aa; margin-top: 10px; }
+        .battle-close-btn { margin-top: 30px; width: 200px; display: none; }
+    </style>
+</head>
+<body>
+
+    <!-- ОВЕРЛЕЙ БОЯ -->
+    <div id="battleOverlay">
+        <div id="battleTimer">5</div>
+        <div id="battleOpponent">Соперник: ...</div>
+        <div id="battleResult"></div>
+        <button class="btn btn-gold battle-close-btn" id="battleCloseBtn" onclick="closeBattle()">Закрыть</button>
+    </div>
+
+    <!-- МАГАЗИН -->
+    <div class="screen active" id="screen-shop">
+        <div class="header-balance">💰 <span class="gold" id="sRich">0</span> RICH</div>
+        <h3>🛒 Магазин</h3>
+        <div id="shopContent"></div>
+    </div>
+
+    <!-- ЗАРАБОТОК -->
+    <div class="screen" id="screen-earn">
+        <div class="header-balance">💰 <span class="gold" id="eRich">0</span> RICH</div>
+        <h3>📋 Заработок</h3>
+        <div id="earnContent"></div>
+    </div>
+
+    <!-- ГЛАВНАЯ -->
+    <div class="screen" id="screen-main">
+        <div class="header-balance">💰 <span class="gold" id="mRich">0</span> RICH</div>
+        <h3>⚔️ Rich Battle</h3>
+        <div class="card">
+            <p>⭐ Уровень: <span class="gold" id="lvl">1</span></p>
+            <p>📈 Рейтинг: <span class="gold" id="rating">0</span></p>
+            <p>⚔️ Атака: <span class="green" id="atk">5</span></p>
+            <p>🛡 Защита: <span class="blue" id="def">0</span></p>
+        </div>
+        <div class="card card-gold">
+            <h4>⚔️ PvP Бой (реальные игроки)</h4>
+            <p class="sub">Победа: +15–17 баллов | Поражение: –8–10 баллов</p>
+            <div id="pvpStatus" class="sub" style="margin:6px 0">Готов к бою</div>
+            <button class="btn btn-gold" onclick="findPvP()">🔍 Найти соперника</button>
+            <button class="btn btn-blue" onclick="createLobby()">🏴 Создать лобби</button>
+        </div>
+        <div class="card">
+            <h4>🏆 Топ-5</h4>
+            <div id="top5">Загрузка...</div>
+        </div>
+    </div>
+
+    <!-- БИРЖА -->
+    <div class="screen" id="screen-market">
+        <div class="header-balance">💰 <span class="gold" id="mkRich">0</span> RICH</div>
+        <h3>📊 Биржа</h3>
+        <div class="card"><p class="sub">В разработке</p></div>
+    </div>
+
+    <!-- ПРОФИЛЬ -->
+    <div class="screen" id="screen-profile">
+        <div class="header-balance">💰 <span class="gold" id="pRich">0</span> RICH</div>
+        <h3>👤 Профиль</h3>
+        <div class="card">
+            <p>🆔 ID: <b id="profileId">8684827145</b></p>
+            <p>⭐ Уровень: <span class="gold" id="pLvl">1</span></p>
+            <p>📈 Рейтинг: <span class="gold" id="pRating">0</span></p>
+        </div>
+        <div class="card card-gold">
+            <p>💰 RICH: <span class="gold" id="profRich">0</span></p>
+        </div>
+        <button class="btn btn-dark" onclick="showTab('main')">🔙 На главную</button>
+    </div>
+
+    <!-- НИЖНЕЕ МЕНЮ -->
+    <div class="bottom-nav">
+        <button class="nav-btn active" onclick="showTab('shop')"><span class="icon">🛒</span>Магазин</button>
+        <button class="nav-btn" onclick="showTab('earn')"><span class="icon">📋</span>Заработок</button>
+        <button class="nav-btn" onclick="showTab('main')"><span class="icon">🏠</span>Главная</button>
+        <button class="nav-btn" onclick="showTab('market')"><span class="icon">📊</span>Биржа</button>
+        <button class="nav-btn" onclick="showTab('profile')"><span class="icon">👤</span>Профиль</button>
+    </div>
+
+    <script>
+        // ==================== ДАННЫЕ ====================
+        let player = JSON.parse(localStorage.getItem('richBattle')) || {
+            id: '8684827145',
+            username: '@player',
+            rich: 0, level: 1, rating: 0, exp: 0,
+            weapon: null, armor: null,
+            premType: null, premExpire: 0,
+            tasks: []
+        };
+
+        // База игроков (реальные)
+        let players = JSON.parse(localStorage.getItem('players')) || [player];
+
+        // Активные лобби
+        let lobbies = JSON.parse(localStorage.getItem('lobbies')) || [];
+
+        function save() {
+            localStorage.setItem('richBattle', JSON.stringify(player));
+            localStorage.setItem('players', JSON.stringify(players));
+            localStorage.setItem('lobbies', JSON.stringify(lobbies));
+            updateUI();
+        }
+
+        // ==================== НАВИГАЦИЯ ====================
+        function showTab(tab) {
+            document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+            document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('active'));
+            const map = { shop:'screen-shop', earn:'screen-earn', main:'screen-main', market:'screen-market', profile:'screen-profile' };
+            if (map[tab]) document.getElementById(map[tab]).classList.add('active');
+            const navMap = { shop:0, earn:1, main:2, market:3, profile:4 };
+            if (navMap[tab] !== undefined) document.querySelectorAll('.nav-btn')[navMap[tab]].classList.add('active');
+            if (tab === 'main') renderMain();
+            if (tab === 'shop') renderShop();
+            if (tab === 'earn') renderEarn();
+            if (tab === 'profile') renderProfile();
+            updateUI();
+        }
+
+        // ==================== МАГАЗИН ====================
+        const WEAPONS = [
+            { name: '🗡 Кинжал', price: 100, atk: 5 },
+            { name: '⚔️ Меч', price: 300, atk: 15 },
+            { name: '🪓 Топор', price: 500, atk: 30 },
+            { name: '🔥 Огненный меч', price: 1000, atk: 50 },
+            { name: '💀 Тёмный клинок', price: 1500, atk: 70 }
+        ];
+        const ARMORS = [
+            { name: '🛡 Щит', price: 100, def: 10 },
+            { name: '⛓ Кольчуга', price: 300, def: 25 },
+            { name: '🏰 Латы', price: 500, def: 50 },
+            { name: '🐉 Драконья броня', price: 1000, def: 80 }
+        ];
+
+        function renderShop() {
+            let html = `<div class="card"><h4>🗡 Оружие</h4>`;
+            WEAPONS.forEach(w => {
+                html += `<div class="shop-item"><span>${w.name}</span><span class="gold">${w.price} RICH</span><button class="btn btn-green btn-sm" onclick="buyWeapon('${w.name}')">Купить</button></div>`;
+            });
+            html += `</div><div class="card"><h4>🛡 Броня</h4>`;
+            ARMORS.forEach(a => {
+                html += `<div class="shop-item"><span>${a.name}</span><span class="gold">${a.price} RICH</span><button class="btn btn-green btn-sm" onclick="buyArmor('${a.name}')">Купить</button></div>`;
+            });
+            html += `</div>`;
+            document.getElementById('shopContent').innerHTML = html;
+        }
+
+        function buyWeapon(name) {
+            const w = WEAPONS.find(x => x.name === name);
+            if (player.rich < w.price) return alert('❌ Недостаточно RICH');
+            player.rich -= w.price;
+            if (!player.weapon) player.weapon = [];
+            player.weapon.push({ name: w.name, atk: w.atk });
+            save();
+            renderShop();
+            alert(`✅ Куплено: ${w.name}`);
+        }
+
+        function buyArmor(name) {
+            const a = ARMORS.find(x => x.name === name);
+            if (player.rich < a.price) return alert('❌ Недостаточно RICH');
+            player.rich -= a.price;
+            if (!player.armor) player.armor = [];
+            player.armor.push({ name: a.name, def: a.def });
+            save();
+            renderShop();
+            alert(`✅ Куплено: ${a.name}`);
+        }
+
+        // ==================== ЗАРАБОТОК ====================
+        function renderEarn() {
+            document.getElementById('earnContent').innerHTML = `
+                <div class="card card-gold">
+                    <h4>🎁 Ежедневный бонус</h4>
+                    <p class="sub">Заходи каждый день и получай RICH</p>
+                    <button class="btn btn-gold" onclick="claimBonus()">🎁 Забрать бонус</button>
+                </div>
+                <div class="card">
+                    <h4>📋 Задания</h4>
+                    <p class="sub">Скоро появятся</p>
+                </div>
+            `;
+        }
+
+        function claimBonus() {
+            player.rich += 10;
+            save();
+            alert('🎉 +10 RICH!');
+        }
+
+        // ==================== ГЛАВНАЯ ====================
+        function getAtk() {
+            let base = 5;
+            if (player.weapon) {
+                player.weapon.forEach(w => base += w.atk);
+            }
+            if (player.premType && Date.now() < player.premExpire) {
+                base *= (player.premType === 'L' ? 1.15 : 1.10);
+            }
+            return Math.floor(base);
+        }
+
+        function getDef() {
+            let base = 0;
+            if (player.armor) {
+                player.armor.forEach(a => base += a.def);
+            }
+            return base;
+        }
+
+        function renderMain() {
+            document.getElementById('lvl').textContent = player.level;
+            document.getElementById('rating').textContent = player.rating;
+            document.getElementById('atk').textContent = getAtk();
+            document.getElementById('def').textContent = getDef();
+
+            // Топ-5 реальных игроков
+            const sorted = [...players].sort((a, b) => b.rating - a.rating).slice(0, 5);
+            let html = '';
+            const medals = ['🥇', '🥈', '🥉', '#4', '#5'];
+            sorted.forEach((p, i) => {
+                html += `${medals[i]} ${p.username || p.id} — ⭐ ${p.rating}<br>`;
+            });
+            document.getElementById('top5').innerHTML = html || 'Нет игроков';
+        }
+
+        // ==================== PvP (ТОЛЬКО РЕАЛЬНЫЕ ИГРОКИ) ====================
+        function findPvP() {
+            // Ищем соперника среди реальных игроков (не боты)
+            const opponents = players.filter(p => p.id !== player.id && p.rating !== undefined);
+            
+            if (opponents.length === 0) {
+                document.getElementById('pvpStatus').textContent = '❌ Нет активных игроков. Создайте лобби!';
+                return;
+            }
+
+            // Берём случайного реального игрока
+            const opponent = opponents[Math.floor(Math.random() * opponents.length)];
+            document.getElementById('pvpStatus').textContent = `⚔️ Соперник найден: ${opponent.username || opponent.id}`;
+            
+            // Запускаем бой с таймером 5 секунд
+            startBattle(opponent);
+        }
+
+        function createLobby() {
+            const lobby = {
+                id: Date.now(),
+                creator: player.id,
+                creatorUsername: player.username || player.id,
+                status: 'waiting',
+                opponent: null
+            };
+            lobbies.push(lobby);
+            save();
+            document.getElementById('pvpStatus').textContent = `🏴 Лобби создано! ID: ${lobby.id}. Ожидание соперника...`;
+            alert('Лобби создано! Другие игроки могут присоединиться.');
+            // Симуляция присоединения через 3 секунды (для теста)
+            setTimeout(() => {
+                const available = players.filter(p => p.id !== player.id);
+                if (available.length > 0) {
+                    const opp = available[0];
+                    lobby.opponent = opp.id;
+                    lobby.status = 'fighting';
+                    save();
+                    document.getElementById('pvpStatus').textContent = `⚔️ Соперник присоединился: ${opp.username || opp.id}`;
+                    startBattle(opp);
+                }
+            }, 3000);
+        }
+
+        function startBattle(opponent) {
+            const overlay = document.getElementById('battleOverlay');
+            const timerEl = document.getElementById('battleTimer');
+            const resultEl = document.getElementById('battleResult');
+            const oppEl = document.getElementById('battleOpponent');
+            const closeBtn = document.getElementById('battleCloseBtn');
+
+            overlay.classList.add('active');
+            closeBtn.style.display = 'none';
+            resultEl.textContent = '';
+            oppEl.textContent = `Соперник: ${opponent.username || opponent.id}`;
+
+            let seconds = 5;
+            timerEl.textContent = seconds;
+
+            const interval = setInterval(() => {
+                seconds--;
+                timerEl.textContent = seconds;
+                if (seconds <= 0) {
+                    clearInterval(interval);
+                    // Расчёт боя
+                    const myAtk = getAtk();
+                    const myDef = getDef();
+                    const oppAtk = getAtkFor(opponent);
+                    const oppDef = getDefFor(opponent);
+
+                    const myScore = myAtk + Math.random() * 20;
+                    const oppScore = oppAtk + Math.random() * 20;
+
+                    if (myScore > oppScore) {
+                        const pts = Math.floor(Math.random() * 3) + 15;
+                        player.rating += pts;
+                        resultEl.innerHTML = `<span class="green">🎉 ПОБЕДА!</span><br>⭐ +${pts} баллов`;
+                    } else {
+                        const pts = Math.floor(Math.random() * 3) + 8;
+                        player.rating = Math.max(0, player.rating - pts);
+                        resultEl.innerHTML = `<span class="red">💀 ПОРАЖЕНИЕ</span><br>⭐ -${pts} баллов`;
+                    }
+                    save();
+                    closeBtn.style.display = 'block';
+                }
+            }, 1000);
+        }
+
+        function closeBattle() {
+            document.getElementById('battleOverlay').classList.remove('active');
+            document.getElementById('pvpStatus').textContent = 'Готов к бою';
+            renderMain();
+            updateUI();
+        }
+
+        // Вспомогательные функции для соперника
+        function getAtkFor(p) {
+            let base = 5;
+            if (p.weapon) {
+                p.weapon.forEach(w => base += w.atk);
+            }
+            if (p.premType && Date.now() < p.premExpire) {
+                base *= (p.premType === 'L' ? 1.15 : 1.10);
+            }
+            return Math.floor(base);
+        }
+
+        function getDefFor(p) {
+            let base = 0;
+            if (p.armor) {
+                p.armor.forEach(a => base += a.def);
+            }
+            return base;
+        }
+
+        // ==================== ПРОФИЛЬ ====================
+        function renderProfile() {
+            document.getElementById('pLvl').textContent = player.level;
+            document.getElementById('pRating').textContent = player.rating;
+            document.getElementById('profRich').textContent = player.rich;
+            document.getElementById('profileId').textContent = player.id;
+        }
+
+        // ==================== ОБНОВЛЕНИЕ UI ====================
+        function updateUI() {
+            ['sRich', 'eRich', 'mRich', 'mkRich', 'pRich'].forEach(id => {
+                const el = document.getElementById(id);
+                if (el) el.textContent = player.rich;
+            });
+        }
+
+        // ==================== ИНИЦИАЛИЗАЦИЯ ====================
+        renderShop();
+        renderMain();
+        renderEarn();
+        renderProfile();
+        updateUI();
+
+        // Добавляем себя в список игроков
+        if (!players.find(p => p.id === player.id)) {
+            players.push(player);
+            save();
+        }
+    </script>
+</body>
+  </html>
