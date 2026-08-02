@@ -1,0 +1,926 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>⚔️ Rich Battle</title>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800&display=swap');
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: 'Inter', system-ui, sans-serif;
+            background: #0a0e17;
+            color: #fff;
+            min-height: 100vh;
+            max-width: 500px;
+            margin: 0 auto;
+            padding: 0 0 100px 0;
+            background-image: radial-gradient(circle at 20% 30%, #1a2332 0%, #0a0e17 80%);
+            -webkit-tap-highlight-color: transparent;
+        }
+        .screen { display: none; animation: fadeUp 0.3s ease; }
+        .screen.active { display: block; }
+        @keyframes fadeUp { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
+
+        .header {
+            padding: 20px 16px 10px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            background: rgba(10, 14, 23, 0.8);
+            backdrop-filter: blur(10px);
+            position: sticky;
+            top: 0;
+            z-index: 10;
+            border-bottom: 1px solid rgba(255,255,255,0.05);
+        }
+        .header h1 { font-size: 22px; font-weight: 800; color: #f0b90b; letter-spacing: -0.5px; }
+        .header .balance { font-size: 14px; color: #8899aa; }
+        .header .balance span { color: #f0b90b; font-weight: 700; }
+
+        .card {
+            background: linear-gradient(145deg, rgba(20, 28, 45, 0.9), rgba(10, 14, 23, 0.95));
+            border: 1px solid rgba(255,255,255,0.06);
+            border-radius: 24px;
+            padding: 20px;
+            margin: 12px 16px;
+            backdrop-filter: blur(10px);
+            box-shadow: 0 8px 32px rgba(0,0,0,0.6);
+            transition: transform 0.15s;
+        }
+        .card:active { transform: scale(0.98); }
+        .card-gold { border-color: #f0b90b; background: rgba(240,185,11,0.05); }
+        .card-green { border-color: #10b981; background: rgba(16,185,129,0.05); }
+        .card-red { border-color: #f85149; background: rgba(248,81,73,0.05); }
+        .card-blue { border-color: #6366f1; background: rgba(99,102,241,0.05); }
+
+        .gold { color: #f0b90b; font-weight: 700; }
+        .green { color: #10b981; }
+        .red { color: #f85149; }
+        .blue { color: #6366f1; }
+        .sub { color: #8899aa; font-size: 13px; }
+
+        .btn {
+            padding: 16px;
+            border-radius: 16px;
+            border: none;
+            font-weight: 700;
+            font-size: 16px;
+            width: 100%;
+            cursor: pointer;
+            margin: 6px 0;
+            transition: all 0.15s;
+            font-family: 'Inter', sans-serif;
+            letter-spacing: 0.3px;
+        }
+        .btn:active { transform: scale(0.95); }
+        .btn-gold { background: linear-gradient(135deg, #f0b90b, #d4a000); color: #000; box-shadow: 0 4px 20px rgba(240,185,11,0.3); }
+        .btn-green { background: #10b981; color: #fff; }
+        .btn-red { background: #f85149; color: #fff; }
+        .btn-blue { background: #6366f1; color: #fff; }
+        .btn-dark { background: #1a2332; color: #fff; border: 1px solid rgba(255,255,255,0.06); }
+        .btn-sm { padding: 10px 16px; font-size: 13px; width: auto; }
+
+        .input {
+            width: 100%; padding: 16px; border-radius: 14px;
+            border: 1px solid #1a2332; background: #0a0e17;
+            color: #fff; font-size: 15px; margin: 6px 0; outline: none;
+            font-family: 'Inter', sans-serif;
+        }
+        .input:focus { border-color: #f0b90b; }
+
+        .row { display: flex; gap: 12px; align-items: center; }
+        .col { flex: 1; }
+        .divider { border-top: 1px solid rgba(255,255,255,0.06); margin: 16px 0; }
+
+        h2 { font-size: 24px; font-weight: 800; margin-bottom: 8px; letter-spacing: -0.5px; }
+        h3 { font-size: 18px; font-weight: 700; margin: 12px 0 6px; }
+
+        .shop-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 10px 0;
+            border-bottom: 1px solid rgba(255,255,255,0.06);
+        }
+        .shop-item:last-child { border-bottom: none; }
+        .shop-icon { font-size: 26px; width: 40px; text-align: center; }
+
+        .bottom-nav {
+            position: fixed;
+            bottom: 10px;
+            left: 50%;
+            transform: translateX(-50%);
+            width: calc(100% - 24px);
+            max-width: 476px;
+            background: rgba(10, 14, 23, 0.95);
+            backdrop-filter: blur(12px);
+            display: flex;
+            padding: 6px;
+            gap: 4px;
+            border-radius: 18px;
+            border: 1px solid rgba(255,255,255,0.08);
+            z-index: 100;
+        }
+        .nav-btn {
+            flex: 1;
+            padding: 8px 4px;
+            text-align: center;
+            border-radius: 14px;
+            cursor: pointer;
+            font-size: 10px;
+            color: #8899aa;
+            border: none;
+            background: transparent;
+            transition: 0.15s;
+        }
+        .nav-btn.active { background: #f0b90b; color: #000; font-weight: 700; }
+        .nav-btn .icon { font-size: 22px; display: block; margin-bottom: 2px; }
+
+        .badge { background: #10b981; padding: 2px 10px; border-radius: 12px; font-size: 11px; color: #fff; }
+        .badge-locked { background: #1a2332; color: #8899aa; }
+
+        #battleOverlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0,0,0,0.92);
+            z-index: 999;
+            display: none;
+            align-items: center;
+            justify-content: center;
+            flex-direction: column;
+        }
+        #battleOverlay.active { display: flex; }
+        #battleTimer { font-size: 60px; font-weight: 700; color: #f0b90b; }
+        #battleResult { font-size: 28px; margin-top: 20px; text-align: center; }
+        #battleOpponent { font-size: 18px; color: #8899aa; margin-top: 10px; }
+        .battle-close-btn { margin-top: 30px; width: 200px; display: none; }
+    </style>
+</head>
+<body>
+
+    <!-- ОВЕРЛЕЙ БОЯ -->
+    <div id="battleOverlay">
+        <div id="battleTimer">5</div>
+        <div id="battleOpponent">Соперник: ...</div>
+        <div id="battleResult"></div>
+        <button class="btn btn-gold battle-close-btn" id="battleCloseBtn" onclick="closeBattle()">Закрыть</button>
+    </div>
+
+    <!-- ==================== НАВИГАЦИЯ ==================== -->
+    <div class="bottom-nav">
+        <button class="nav-btn active" onclick="showTab('main')"><span class="icon">🏠</span>Главная</button>
+        <button class="nav-btn" onclick="showTab('shop')"><span class="icon">🛒</span>Магазин</button>
+        <button class="nav-btn" onclick="showTab('earn')"><span class="icon">📋</span>Заработок</button>
+        <button class="nav-btn" onclick="showTab('market')"><span class="icon">📊</span>Биржа</button>
+        <button class="nav-btn" onclick="showTab('profile')"><span class="icon">👤</span>Профиль</button>
+    </div>
+
+    <!-- ==================== МАГАЗИН ==================== -->
+    <div class="screen" id="screen-shop">
+        <div class="header">
+            <h1>🛒 Магазин</h1>
+            <div class="balance">💰 <span id="sRich">0</span> RICH</div>
+        </div>
+        <div id="shopContent"></div>
+    </div>
+
+    <!-- ==================== ЗАРАБОТОК ==================== -->
+    <div class="screen" id="screen-earn">
+        <div class="header">
+            <h1>📋 Заработок</h1>
+            <div class="balance">💰 <span id="eRich">0</span> RICH</div>
+        </div>
+        <div id="earnContent"></div>
+    </div>
+
+    <!-- ==================== ГЛАВНАЯ ==================== -->
+    <div class="screen active" id="screen-main">
+        <div class="header">
+            <h1>⚔️ Rich Battle</h1>
+            <div class="balance">💰 <span id="mRich">0</span> RICH</div>
+        </div>
+        <div id="mainContent"></div>
+    </div>
+
+    <!-- ==================== БИРЖА ==================== -->
+    <div class="screen" id="screen-market">
+        <div class="header">
+            <h1>📊 Биржа</h1>
+            <div class="balance">💰 <span id="mkRich">0</span> RICH</div>
+        </div>
+        <div id="marketContent"></div>
+    </div>
+
+    <!-- ==================== ПРОФИЛЬ ==================== -->
+    <div class="screen" id="screen-profile">
+        <div class="header">
+            <h1>👤 Профиль</h1>
+            <div class="balance">💰 <span id="pRich">0</span> RICH</div>
+        </div>
+        <div id="profileContent"></div>
+    </div>
+
+    <!-- ==================== АДМИН-ПАНЕЛЬ ==================== -->
+    <div class="screen" id="screen-admin">
+        <div class="header">
+            <h1>🔧 Админ-панель</h1>
+        </div>
+        <div id="adminContent"></div>
+    </div>
+
+    <script>
+        // ==================== ДАННЫЕ ====================
+        let player = JSON.parse(localStorage.getItem('richPlayer')) || {
+            id: Date.now().toString(),
+            rich: 0,
+            gram: 0,
+            level: 1,
+            rating: 0,
+            exp: 0,
+            power: 100,
+            defense: 100,
+            weapon: [],
+            armor: [],
+            premType: null,
+            premExpire: 0,
+            bonusDay: 1,
+            bonusLastClaim: 0,
+            tasksDone: [],
+            refs: [],
+            refEarn: 0,
+            depHistory: [],
+            wdHistory: [],
+            tradeHistory: [],
+            promosUsed: [],
+            battlesTotal: 0,
+            battlesWon: 0,
+            tournamentPlace: 15
+        };
+
+        // Сохраняем игрока в общую базу
+        let players = JSON.parse(localStorage.getItem('allPlayers')) || [];
+        if (!players.find(p => p.id === player.id)) {
+            players.push(player);
+            localStorage.setItem('allPlayers', JSON.stringify(players));
+        }
+
+        let tasks = JSON.parse(localStorage.getItem('tasks')) || [];
+        let promoCodes = JSON.parse(localStorage.getItem('promoCodes')) || [];
+        let tournaments = JSON.parse(localStorage.getItem('tournaments')) || [];
+        let lobbies = JSON.parse(localStorage.getItem('lobbies')) || [];
+        let tradeHistory = JSON.parse(localStorage.getItem('tradeHistory')) || [];
+
+        function save() {
+            localStorage.setItem('richPlayer', JSON.stringify(player));
+            localStorage.setItem('allPlayers', JSON.stringify(players));
+            localStorage.setItem('tasks', JSON.stringify(tasks));
+            localStorage.setItem('promoCodes', JSON.stringify(promoCodes));
+            localStorage.setItem('tournaments', JSON.stringify(tournaments));
+            localStorage.setItem('lobbies', JSON.stringify(lobbies));
+            localStorage.setItem('tradeHistory', JSON.stringify(tradeHistory));
+            updateUI();
+        }
+
+        // ==================== НАВИГАЦИЯ ====================
+        function showTab(tab) {
+            document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+            document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('active'));
+            const map = { main:'screen-main', shop:'screen-shop', earn:'screen-earn', market:'screen-market', profile:'screen-profile' };
+            if (map[tab]) document.getElementById(map[tab]).classList.add('active');
+            const navMap = { main:0, shop:1, earn:2, market:3, profile:4 };
+            if (navMap[tab] !== undefined) document.querySelectorAll('.nav-btn')[navMap[tab]].classList.add('active');
+            if (tab === 'main') renderMain();
+            if (tab === 'shop') renderShop();
+            if (tab === 'earn') renderEarn();
+            if (tab === 'market') renderMarket();
+            if (tab === 'profile') renderProfile();
+            updateUI();
+        }
+
+        function showAdmin() {
+            document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+            document.getElementById('screen-admin').classList.add('active');
+            renderAdmin();
+        }
+
+        // ==================== МАГАЗИН ====================
+        const WEAPONS = [
+            { name: 'Нож', price: 50, stat: 5 },
+            { name: '🗡 Меч', price: 150, stat: 17 },
+            { name: 'Кинжал', price: 250, stat: 28 },
+            { name: 'Топор', price: 350, stat: 40 },
+            { name: 'Палаш', price: 500, stat: 60 },
+            { name: 'Рапира', price: 700, stat: 85 },
+            { name: 'Клеймор', price: 1000, stat: 130 }
+        ];
+        const ARMORS = [
+            { name: 'Шлем', price: 50, stat: 5 },
+            { name: 'Броня', price: 150, stat: 17 },
+            { name: 'Латы', price: 350, stat: 40 },
+            { name: 'Кольчуга', price: 500, stat: 60 },
+            { name: 'Доспех', price: 700, stat: 85 },
+            { name: 'Мифрил', price: 1000, stat: 130 }
+        ];
+
+        function renderShop() {
+            let html = `<div class="card card-gold"><h2>🗡 Оружие</h2>`;
+            WEAPONS.forEach(w => {
+                const owned = player.weapon.some(x => x.name === w.name);
+                html += `<div class="shop-item"><span>${w.name} <span class="green">+${w.stat}</span></span><span class="gold">${w.price} RICH</span>${owned ? '<span class="badge">✅</span>' : `<button class="btn btn-green btn-sm" onclick="buyWeapon('${w.name}')">Купить</button>`}</div>`;
+            });
+            html += `</div><div class="card card-blue"><h2>🛡 Броня</h2>`;
+            ARMORS.forEach(a => {
+                const owned = player.armor.some(x => x.name === a.name);
+                html += `<div class="shop-item"><span>${a.name} <span class="blue">+${a.stat}</span></span><span class="gold">${a.price} RICH</span>${owned ? '<span class="badge">✅</span>' : `<button class="btn btn-green btn-sm" onclick="buyArmor('${a.name}')">Купить</button>`}</div>`;
+            });
+            html += `</div><div class="card card-gold"><h2>👑 Премиум</h2>`;
+            html += `<div class="shop-item"><span>⭐ 3 дня</span><span class="gold">150 RICH</span><button class="btn btn-green btn-sm" onclick="buyPremium(3)">Купить</button></div>`;
+            html += `<div class="shop-item"><span>⭐ 7 дней</span><span class="gold">300 RICH</span><button class="btn btn-green btn-sm" onclick="buyPremium(7)">Купить</button></div>`;
+            html += `<div class="shop-item"><span>⭐ 30 дней</span><span class="gold">1200 RICH</span><button class="btn btn-green btn-sm" onclick="buyPremium(30)">Купить</button></div>`;
+            html += `<div class="shop-item"><span>👑 Навсегда</span><span class="gold">2500 RICH</span><button class="btn btn-green btn-sm" onclick="buyPremium(0)">Купить</button></div>`;
+            html += `</div>`;
+            document.getElementById('shopContent').innerHTML = html;
+        }
+
+        function buyWeapon(name) {
+            const w = WEAPONS.find(x => x.name === name);
+            if (player.rich < w.price) return alert('❌ Недостаточно RICH');
+            if (player.weapon.some(x => x.name === name)) return alert('❌ Уже куплено');
+            player.rich -= w.price;
+            player.weapon.push({ name: w.name, stat: w.stat });
+            player.power += w.stat;
+            save();
+            renderShop();
+            alert(`✅ Куплено: ${w.name}`);
+        }
+
+        function buyArmor(name) {
+            const a = ARMORS.find(x => x.name === name);
+            if (player.rich < a.price) return alert('❌ Недостаточно RICH');
+            if (player.armor.some(x => x.name === name)) return alert('❌ Уже куплено');
+            player.rich -= a.price;
+            player.armor.push({ name: a.name, stat: a.stat });
+            player.defense += a.stat;
+            save();
+            renderShop();
+            alert(`✅ Куплено: ${a.name}`);
+        }
+
+        function buyPremium(days) {
+            const prices = { 3:150, 7:300, 30:1200, 0:2500 };
+            if (player.rich < prices[days]) return alert('❌ Недостаточно RICH');
+            player.rich -= prices[days];
+            player.premType = days === 0 ? 'L' : days;
+            player.premExpire = days === 0 ? Infinity : Date.now() + days * 86400000;
+            save();
+            alert('✅ Премиум активирован!');
+        }
+
+        // ==================== ЗАРАБОТОК ====================
+        function renderEarn() {
+            const now = Date.now();
+            const canClaim = (now - player.bonusLastClaim) >= 86400000;
+            const bonuses = [0.1, 0.2, 0.4, 0.6, 0.8, 1.0, 1.5];
+            const day = player.bonusDay;
+
+            if (player.bonusLastClaim > 0 && !canClaim) {
+                player.bonusDay = 1;
+                player.bonusLastClaim = 0;
+                save();
+            }
+
+            const bonus = bonuses[Math.min(day - 1, bonuses.length - 1)];
+            let html = `<div class="card card-gold" style="text-align:center">`;
+            html += `<p style="font-size:48px">🎁</p>`;
+            html += `<p class="gold" style="font-size:18px">Ежедневный бонус</p>`;
+            html += `<div class="row" style="justify-content:center;gap:6px;flex-wrap:wrap">`;
+            bonuses.forEach((b, i) => {
+                const active = (i + 1) === day;
+                html += `<span style="background:${active?'#f0b90b':'#1a2332'};color:${active?'#000':'#8899aa'};padding:4px 8px;border-radius:8px;font-size:12px">День ${i+1}: ${b} RICH</span>`;
+            });
+            html += `</div>`;
+            html += `<p class="sub">🔥 Серия: ${day} / 7 дней</p>`;
+            html += `<p class="sub">Максимум за неделю: 2.5 RICH</p>`;
+            if (canClaim || (day === 1 && player.bonusLastClaim === 0)) {
+                html += `<button class="btn btn-gold" onclick="claimBonus(${bonus})">🎁 Забрать</button>`;
+            } else {
+                const remain = Math.ceil((86400000 - (now - player.bonusLastClaim)) / 60000);
+                html += `<p class="sub">⏳ Через ${remain} мин.</p>`;
+                html += `<button class="btn btn-dark" disabled>⏳ Ожидайте</button>`;
+            }
+            html += `</div>`;
+
+            // Задания
+            html += `<div class="card"><h2>📌 Задания</h2>`;
+            if (tasks.length === 0) {
+                html += `<p class="sub">Заданий пока нет</p>`;
+            } else {
+                tasks.forEach((t, i) => {
+                    const done = t.completedBy && t.completedBy.includes(player.id);
+                    html += `<div class="shop-item"><span>${t.name}</span><span class="gold">+${t.reward} RICH</span>${done ? '<span class="badge">✅</span>' : `<button class="btn btn-green btn-sm" onclick="completeTask(${i})">✅ Выполнить</button>`}</div>`;
+                });
+            }
+            html += `</div>`;
+
+            // Рефералы
+            html += `<div class="card card-green"><h2>👥 Рефералы</h2>`;
+            html += `<p>👤 Друзей: <span class="gold" id="refCount">${player.refs.length}</span></p>`;
+            html += `<p>💰 Заработано: <span class="gold" id="refEarn">${player.refEarn}</span> RICH</p>`;
+            html += `<p class="sub">📌 2.5% от пополнений друга | +1 RICH за каждые 10 заданий друга</p>`;
+            html += `<button class="btn btn-blue" onclick="copyRef()">📋 Скопировать реферальную ссылку</button>`;
+            html += `</div>`;
+
+            // Промокод
+            html += `<div class="card"><h2>🔑 Промокод</h2>`;
+            html += `<input class="input" id="promoInput" placeholder="Введите промокод">`;
+            html += `<button class="btn btn-gold" onclick="activatePromo()">🔓 Активировать</button>`;
+            html += `</div>`;
+
+            document.getElementById('earnContent').innerHTML = html;
+        }
+
+        function claimBonus(amount) {
+            player.rich += amount;
+            player.bonusLastClaim = Date.now();
+            player.bonusDay = player.bonusDay >= 7 ? 1 : player.bonusDay + 1;
+            save();
+            renderEarn();
+            alert(`🎉 +${amount} RICH`);
+        }
+
+        function completeTask(index) {
+            const t = tasks[index];
+            if (!t) return alert('❌ Задание не найдено');
+            if (t.completedBy && t.completedBy.includes(player.id)) return alert('❌ Уже выполнено');
+            if (t.link) window.open(t.link, '_blank');
+            setTimeout(() => {
+                player.rich += t.reward;
+                if (!t.completedBy) t.completedBy = [];
+                t.completedBy.push(player.id);
+                save();
+                renderEarn();
+                alert(`✅ +${t.reward} RICH!`);
+            }, 3000);
+        }
+
+        function activatePromo() {
+            const code = document.getElementById('promoInput').value.trim().toUpperCase();
+            if (!code) return alert('❌ Введите код');
+            if (player.promosUsed.includes(code)) return alert('❌ Уже использован');
+            const found = promoCodes.find(p => p.code === code && p.uses > 0);
+            if (!found) return alert('❌ Неверный или использованный код');
+            player.rich += found.reward;
+            player.promosUsed.push(code);
+            found.uses--;
+            save();
+            renderEarn();
+            alert(`✅ +${found.reward} RICH!`);
+        }
+
+        function copyRef() {
+            const link = `https://${window.location.host}?ref=${player.id}`;
+            navigator.clipboard?.writeText(link);
+            alert('✅ Реферальная ссылка скопирована!');
+        }
+
+        // ==================== ГЛАВНАЯ ====================
+        function renderMain() {
+            const total = player.battlesTotal || 0;
+            const won = player.battlesWon || 0;
+            const lost = total - won;
+
+            let html = `<div class="card card-gold">
+                <div class="row">
+                    <div class="col"><span class="sub">💰 RICH</span><br><span class="gold" style="font-size:24px">${player.rich}</span></div>
+                    <div class="col"><span class="sub">💵 GRAM</span><br><span class="gold" style="font-size:24px">${player.gram}</span></div>
+                </div>
+            </div>`;
+
+            html += `<div class="card">
+                <div class="row">
+                    <div class="col"><span class="sub">⚔️ Сила</span><br><span class="green" style="font-size:20px">${player.power}</span></div>
+                    <div class="col"><span class="sub">🛡 Защита</span><br><span class="blue" style="font-size:20px">${player.defense}</span></div>
+                </div>
+                <div class="divider"></div>
+                <div class="row">
+                    <div class="col"><span class="sub">⭐ Балы</span><br><span class="gold" style="font-size:20px">${player.rating}</span></div>
+                    <div class="col"><span class="sub">🏆 Место</span><br><span class="gold" style="font-size:20px">${player.tournamentPlace}</span></div>
+                </div>
+            </div>`;
+
+            // Бой
+            html += `<div class="card card-red" style="text-align:center">
+                <h2>⚔️ Бой</h2>
+                <p class="sub">Всего боёв: ${total} | 🟢 Победы: ${won} | 🔴 Поражения: ${lost}</p>
+                <div id="pvpStatus" class="sub" style="margin:6px 0">Готов к бою</div>
+                <div class="row">
+                    <div class="col"><button class="btn btn-gold" onclick="joinLobby()">🔍 Присоединиться</button></div>
+                    <div class="col"><button class="btn btn-blue" onclick="createLobby()">⚔️ Создать бой</button></div>
+                </div>
+            </div>`;
+
+            // Турнир
+            html += `<div class="card card-blue"><h2>🏆 Турнир</h2>`;
+            const now = Date.now();
+            const active = tournaments.filter(t => new Date(t.endDate) > now);
+            if (active.length > 0) {
+                const t = active[0];
+                html += `<p class="gold">🏆 ${t.name}</p>`;
+                html += `<p class="sub">📅 До: ${t.endDate}</p>`;
+                html += `<p class="sub">🎁 Призы: ${t.prizes}</p>`;
+                html += `<div class="sub" style="margin:6px 0">`;
+                const sorted = [...players].sort((a, b) => b.rating - a.rating);
+                sorted.slice(0, 15).forEach((p, i) => {
+                    const medal = ['🥇','🥈','🥉','#4','#5','#6','#7','#8','#9','#10','#11','#12','#13','#14','#15'][i];
+                    html += `${medal} ${p.id} — ⭐ ${p.rating}<br>`;
+                });
+                html += `</div>`;
+            } else {
+                html += `<p class="sub">Нет активных турниров</p>`;
+            }
+            html += `</div>`;
+
+            document.getElementById('mainContent').innerHTML = html;
+        }
+
+        // ==================== БОЙ (PvP) ====================
+        function joinLobby() {
+            const available = lobbies.filter(l => l.status === 'waiting' && l.creator !== player.id);
+            if (available.length === 0) {
+                document.getElementById('pvpStatus').textContent = '❌ Нет активных боёв. Создайте свой!';
+                return;
+            }
+            const lobby = available[0];
+            lobby.opponent = player.id;
+            lobby.status = 'fighting';
+            save();
+            document.getElementById('pvpStatus').textContent = `⚔️ Присоединились к бою!`;
+            startBattle(lobby.creator);
+        }
+
+        function createLobby() {
+            const lobby = { id: Date.now(), creator: player.id, status: 'waiting', opponent: null };
+            lobbies.push(lobby);
+            save();
+            document.getElementById('pvpStatus').textContent = `⚔️ Бой создан! Ожидайте соперника...`;
+            setTimeout(() => {
+                const available = players.filter(p => p.id !== player.id);
+                if (available.length > 0) {
+                    const opp = available[0];
+                    lobby.opponent = opp.id;
+                    lobby.status = 'fighting';
+                    save();
+                    document.getElementById('pvpStatus').textContent = `⚔️ Соперник найден!`;
+                    startBattle(opp);
+                }
+            }, 5000);
+        }
+
+        function startBattle(opponentId) {
+            const opponent = players.find(p => p.id === opponentId);
+            if (!opponent) return alert('❌ Соперник не найден');
+
+            const overlay = document.getElementById('battleOverlay');
+            const timerEl = document.getElementById('battleTimer');
+            const resultEl = document.getElementById('battleResult');
+            const oppEl = document.getElementById('battleOpponent');
+            const closeBtn = document.getElementById('battleCloseBtn');
+
+            overlay.classList.add('active');
+            closeBtn.style.display = 'none';
+            resultEl.textContent = '';
+            oppEl.textContent = `Соперник: ${opponent.id}`;
+
+            let sec = 5;
+            timerEl.textContent = sec;
+
+            const interval = setInterval(() => {
+                sec--;
+                timerEl.textContent = sec;
+                if (sec <= 0) {
+                    clearInterval(interval);
+                    const myPower = player.power + Math.random() * 20;
+                    const oppPower = opponent.power + Math.random() * 20;
+
+                    player.battlesTotal = (player.battlesTotal || 0) + 1;
+
+                    if (myPower > oppPower) {
+                        const pts = Math.floor(Math.random() * 3) + 15;
+                        player.rating += pts;
+                        player.battlesWon = (player.battlesWon || 0) + 1;
+                        resultEl.innerHTML = `<span class="green">🎉 ПОБЕДА!</span><br>⭐ +${pts} баллов`;
+                    } else {
+                        const pts = Math.floor(Math.random() * 3) + 7;
+                        player.rating = Math.max(0, player.rating - pts);
+                        resultEl.innerHTML = `<span class="red">💀 ПОРАЖЕНИЕ</span><br>⭐ -${pts} баллов`;
+                    }
+                    save();
+                    closeBtn.style.display = 'block';
+                }
+            }, 1000);
+        }
+
+        function closeBattle() {
+            document.getElementById('battleOverlay').classList.remove('active');
+            renderMain();
+            updateUI();
+        }
+
+        // ==================== БИРЖА ====================
+        function renderMarket() {
+            let html = `<div class="card card-gold"><h2>📈 График</h2>`;
+            html += `<div style="height:100px;background:#1a2332;border-radius:16px;display:flex;align-items:flex-end;padding:8px;gap:4px">`;
+            for (let i = 0; i < 20; i++) {
+                const color = Math.random() > 0.5 ? '#10b981' : '#f85149';
+                const height = 20 + Math.random() * 70;
+                html += `<div style="flex:1;background:${color};border-radius:4px 4px 0 0;height:${height}px"></div>`;
+            }
+            html += `</div><p class="sub" style="margin-top:8px">Курс: 100 RICH = 1 GRAM</p></div>`;
+
+            html += `<div class="card card-green"><h2>🟢 Купить RICH</h2>`;
+            html += `<input class="input" type="number" id="buyGram" placeholder="Сумма в GRAM">`;
+            html += `<p class="sub">Получите: <span class="gold" id="buyResult">0</span> RICH (комиссия 5%)</p>`;
+            html += `<button class="btn btn-green" onclick="buyRich()">🟢 Купить</button></div>`;
+
+            html += `<div class="card card-red"><h2>🔴 Продать RICH</h2>`;
+            html += `<input class="input" type="number" id="sellRich" placeholder="Сумма в RICH">`;
+            html += `<p class="sub">Получите: <span class="gold" id="sellResult">0</span> GRAM (комиссия 5%)</p>`;
+            html += `<button class="btn btn-red" onclick="sellRich()">🔴 Продать</button></div>`;
+
+            html += `<div class="card"><h2>📋 История сделок</h2>`;
+            const history = tradeHistory.slice(-10).reverse();
+            if (history.length === 0) {
+                html += `<p class="sub">Нет сделок</p>`;
+            } else {
+                history.forEach(h => {
+                    html += `<p class="sub">${h.time} | ${h.type === 'buy' ? '🟢 Покупка' : '🔴 Продажа'} | ${h.amount}</p>`;
+                });
+            }
+            html += `</div>`;
+            document.getElementById('marketContent').innerHTML = html;
+
+            document.getElementById('buyGram').addEventListener('input', function() {
+                document.getElementById('buyResult').textContent = Math.floor((parseFloat(this.value) || 0) * 95);
+            });
+            document.getElementById('sellRich').addEventListener('input', function() {
+                document.getElementById('sellResult').textContent = ((parseFloat(this.value) || 0) / 100 * 0.95).toFixed(2);
+            });
+        }
+
+        function buyRich() {
+            const gram = parseFloat(document.getElementById('buyGram').value);
+            if (!gram || gram <= 0) return alert('❌ Введите сумму');
+            if (player.gram < gram) return alert('❌ Недостаточно GRAM');
+            const rich = gram * 95;
+            player.gram -= gram;
+            player.rich += rich;
+            tradeHistory.push({ type: 'buy', amount: `${gram} GRAM → ${rich} RICH`, time: new Date().toLocaleString() });
+            save();
+            renderMarket();
+            alert(`✅ +${rich} RICH`);
+        }
+
+        function sellRich() {
+            const rich = parseFloat(document.getElementById('sellRich').value);
+            if (!rich || rich <= 0) return alert('❌ Введите сумму');
+            if (player.rich < rich) return alert('❌ Недостаточно RICH');
+            const gram = (rich / 100) * 0.95;
+            player.rich -= rich;
+            player.gram += gram;
+            tradeHistory.push({ type: 'sell', amount: `${rich} RICH → ${gram.toFixed(2)} GRAM`, time: new Date().toLocaleString() });
+            save();
+            renderMarket();
+            alert(`✅ +${gram.toFixed(2)} GRAM`);
+        }
+
+        // ==================== ПРОФИЛЬ ====================
+        function renderProfile() {
+            let html = `<div class="card">
+                <p>🆔 ID: <b>${player.id}</b></p>
+                <div class="row">
+                    <div class="col"><span class="sub">⭐ Уровень</span><br><span class="gold" style="font-size:18px">${player.level}</span></div>
+                    <div class="col"><span class="sub">📈 Рейтинг</span><br><span class="gold" style="font-size:18px">${player.rating}</span></div>
+                </div>
+            </div>`;
+
+            html += `<div class="card card-gold">
+                <div class="row">
+                    <div class="col"><p class="sub">💰 RICH</p><p class="gold" style="font-size:24px">${player.rich}</p></div>
+                    <div class="col"><p class="sub">💵 GRAM</p><p class="gold" style="font-size:24px">${player.gram}</p></div>
+                </div>
+            </div>`;
+
+            html += `<div class="card">
+                <h2>💎 Пополнение</h2>
+                <p class="sub">📌 Минимум: 1 GRAM</p>
+                <button class="btn btn-gold" onclick="deposit()">💎 Пополнить</button>
+            </div>`;
+
+            html += `<div class="card card-red">
+                <h2>💸 Вывод</h2>
+                <p class="sub">📌 Минимум: 5 GRAM | Комиссия: 15%</p>
+                <button class="btn btn-blue" onclick="withdraw()">💸 Вывести</button>
+            </div>`;
+
+            html += `<div class="card"><h2>📋 История</h2>`;
+            html += `<div class="tab-row"><button class="tab-btn active" onclick="showHistory('dep')">Пополнения</button><button class="tab-btn" onclick="showHistory('wd')">Выводы</button></div>`;
+            html += `<div id="historyContent" class="sub">`;
+            if (player.depHistory.length === 0) {
+                html += `<p>Нет пополнений</p>`;
+            } else {
+                player.depHistory.slice(-5).reverse().forEach(h => {
+                    html += `<p>💎 ${h}</p>`;
+                });
+            }
+            html += `</div></div>`;
+
+            document.getElementById('profileContent').innerHTML = html;
+        }
+
+        function deposit() {
+            alert('💎 Переведите 1+ GRAM на кошелёк:\nUQDmNY1TIMIgnALOpAyJ4_XO2uroUNLFVRwGie5AEwzccaps\n\nУкажите ID в комментарии!');
+        }
+
+        function withdraw() {
+            const amt = prompt('Введите сумму в GRAM (мин 5):');
+            if (!amt || isNaN(amt) || parseFloat(amt) < 5) return alert('❌ Минимум 5 GRAM');
+            const wallet = prompt('Введите ваш TON кошелёк:');
+            if (!wallet) return alert('❌ Введите кошелёк');
+            const fee = parseFloat(amt) * 0.15;
+            const total = parseFloat(amt) - fee;
+            if (player.gram < parseFloat(amt)) return alert('❌ Недостаточно GRAM');
+            player.gram -= parseFloat(amt);
+            player.wdHistory.push(`-${amt} GRAM → ${wallet.slice(0,10)}... | ${new Date().toLocaleString()}`);
+            save();
+            renderProfile();
+            alert(`✅ Заявка создана! 💰 ${total.toFixed(2)} GRAM`);
+        }
+
+        function showHistory(type) {
+            const el = document.getElementById('historyContent');
+            if (type === 'dep') {
+                el.innerHTML = player.depHistory.length ? player.depHistory.slice(-5).reverse().map(h => `💎 ${h}`).join('<br>') : 'Нет пополнений';
+            } else {
+                el.innerHTML = player.wdHistory.length ? player.wdHistory.slice(-5).reverse().map(h => `💸 ${h}`).join('<br>') : 'Нет выводов';
+            }
+        }
+
+        // ==================== АДМИН-ПАНЕЛЬ (ПОЛНОСТЬЮ РАБОТАЕТ) ====================
+        function renderAdmin() {
+            let html = `<div class="card card-gold"><h2>💰 Управление балансом</h2>`;
+            html += `<input class="input" id="adminId" placeholder="ID игрока">`;
+            html += `<input class="input" type="number" id="adminAmount" placeholder="Сумма">`;
+            html += `<div class="row"><div class="col"><button class="btn btn-green" onclick="adminAdd()">➕ Начислить</button></div><div class="col"><button class="btn btn-red" onclick="adminRemove()">➖ Снять</button></div></div>`;
+            html += `</div>`;
+
+            html += `<div class="card"><h2>📌 Управление заданиями</h2>`;
+            html += `<input class="input" id="taskName" placeholder="Название">`;
+            html += `<input class="input" id="taskLink" placeholder="Ссылка">`;
+            html += `<input class="input" type="number" id="taskReward" placeholder="Награда RICH">`;
+            html += `<button class="btn btn-green" onclick="adminAddTask()">➕ Создать</button>`;
+            html += `<div id="taskList" class="sub" style="margin-top:8px">`;
+            tasks.forEach((t, i) => {
+                html += `<p>${i+1}. ${t.name} (+${t.reward} RICH) <button class="btn btn-red btn-sm" onclick="adminDeleteTask(${i})">🗑</button></p>`;
+            });
+            html += `</div></div>`;
+
+            html += `<div class="card"><h2>🏆 Управление турнирами</h2>`;
+            html += `<input class="input" id="tournamentName" placeholder="Название">`;
+            html += `<input class="input" id="tournamentEnd" placeholder="Дата (2026-08-10)">`;
+            html += `<input class="input" id="tournamentPrizes" placeholder="Призы (например 5 NFT)">`;
+            html += `<button class="btn btn-green" onclick="adminAddTournament()">➕ Создать</button>`;
+            html += `<div id="tournamentList" class="sub" style="margin-top:8px">`;
+            tournaments.forEach((t, i) => {
+                html += `<p>${i+1}. ${t.name} (до ${t.endDate}) <button class="btn btn-red btn-sm" onclick="adminDeleteTournament(${i})">🗑</button></p>`;
+            });
+            html += `</div></div>`;
+
+            html += `<div class="card"><h2>🎫 Управление промокодами</h2>`;
+            html += `<input class="input" id="promoCode" placeholder="Код">`;
+            html += `<input class="input" type="number" id="promoReward" placeholder="Награда RICH">`;
+            html += `<input class="input" type="number" id="promoUses" placeholder="Кол-во активаций">`;
+            html += `<button class="btn btn-green" onclick="adminAddPromo()">➕ Создать</button>`;
+            html += `<div id="promoList" class="sub" style="margin-top:8px">`;
+            promoCodes.forEach((p, i) => {
+                html += `<p>${p.code} (+${p.reward} RICH, осталось ${p.uses}) <button class="btn btn-red btn-sm" onclick="adminDeletePromo(${i})">🗑</button></p>`;
+            });
+            html += `</div></div>`;
+
+            html += `<button class="btn btn-dark" onclick="showTab('main')">🔙 На главную</button>`;
+            document.getElementById('adminContent').innerHTML = html;
+        }
+
+        function adminAdd() {
+            const id = document.getElementById('adminId').value.trim();
+            const amount = parseFloat(document.getElementById('adminAmount').value);
+            if (!id || !amount || amount <= 0) return alert('❌ Введите ID и сумму');
+            const target = players.find(p => p.id === id);
+            if (!target) return alert('❌ Игрок не найден');
+            target.rich += amount;
+            save();
+            alert(`✅ Начислено +${amount} RICH игроку ${id}`);
+        }
+
+        function adminRemove() {
+            const id = document.getElementById('adminId').value.trim();
+            const amount = parseFloat(document.getElementById('adminAmount').value);
+            if (!id || !amount || amount <= 0) return alert('❌ Введите ID и сумму');
+            const target = players.find(p => p.id === id);
+            if (!target) return alert('❌ Игрок не найден');
+            if (target.rich < amount) return alert('❌ Недостаточно RICH');
+            target.rich -= amount;
+            save();
+            alert(`✅ Снято -${amount} RICH у игрока ${id}`);
+        }
+
+        function adminAddTask() {
+            const name = document.getElementById('taskName').value.trim();
+            const link = document.getElementById('taskLink').value.trim() || '#';
+            const reward = parseInt(document.getElementById('taskReward').value);
+            if (!name || !reward || reward <= 0) return alert('❌ Заполните все поля');
+            tasks.push({ name, link, reward, completedBy: [] });
+            save();
+            renderAdmin();
+            alert(`✅ Задание "${name}" добавлено!`);
+        }
+
+        function adminDeleteTask(index) {
+            tasks.splice(index, 1);
+            save();
+            renderAdmin();
+        }
+
+        function adminAddTournament() {
+            const name = document.getElementById('tournamentName').value.trim();
+            const endDate = document.getElementById('tournamentEnd').value;
+            const prizes = document.getElementById('tournamentPrizes').value.trim();
+            if (!name || !endDate || !prizes) return alert('❌ Заполните все поля');
+            tournaments.push({ name, endDate, prizes });
+            save();
+            renderAdmin();
+            alert(`✅ Турнир "${name}" создан!`);
+        }
+
+        function adminDeleteTournament(index) {
+            tournaments.splice(index, 1);
+            save();
+            renderAdmin();
+        }
+
+        function adminAddPromo() {
+            const code = document.getElementById('promoCode').value.trim().toUpperCase();
+            const reward = parseInt(document.getElementById('promoReward').value);
+            const uses = parseInt(document.getElementById('promoUses').value);
+            if (!code || !reward || !uses || uses <= 0) return alert('❌ Заполните все поля');
+            promoCodes.push({ code, reward, uses });
+            save();
+            renderAdmin();
+            alert(`✅ Промокод "${code}" создан!`);
+        }
+
+        function adminDeletePromo(index) {
+            promoCodes.splice(index, 1);
+            save();
+            renderAdmin();
+        }
+
+        // ==================== ОБНОВЛЕНИЕ UI ====================
+        function updateUI() {
+            ['sRich', 'eRich', 'mRich', 'mkRich', 'pRich'].forEach(id => {
+                const el = document.getElementById(id);
+                if (el) el.textContent = player.rich;
+            });
+        }
+
+        // ==================== АДМИН-КЛИК ====================
+        let adminClicks = parseInt(localStorage.getItem('adminClicks') || '0');
+        document.addEventListener('click', (e) => {
+            if (e.target.closest('.header h1') && e.target.closest('.header h1').textContent.includes('⚔️')) {
+                adminClicks++;
+                localStorage.setItem('adminClicks', adminClicks);
+                if (adminClicks >= 5) {
+                    localStorage.setItem('adminClicks', '0');
+                    showAdmin();
+                }
+            }
+        });
+
+        // ==================== ИНИЦИАЛИЗАЦИЯ ====================
+        renderMain();
+        renderShop();
+        renderEarn();
+        renderMarket();
+        renderProfile();
+        updateUI();
+
+        if (!players.find(p => p.id === player.id)) {
+            players.push(player);
+            save();
+        }
+    </script>
+</body>
+  </html>
