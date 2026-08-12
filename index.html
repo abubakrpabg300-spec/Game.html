@@ -1,0 +1,492 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>RICH GAME: ULTIMATE EDITION</title>
+    <style>
+        :root {
+            --primary-red: #ff1744;
+            --dark-red: #b71c1c;
+            --primary-blue: #2979ff;
+            --dark-blue: #0d47a1;
+            --bg-deep: #070709;
+            --bg-card: #121218;
+            --bg-card-hover: #1a1a24;
+            --border-color: #2a2a3b;
+            --gold: #ffd700;
+            --text-main: #ffffff;
+            --text-muted: #9e9eb0;
+        }
+
+        * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }
+        body { background-color: var(--bg-deep); color: var(--text-main); display: flex; flex-direction: column; height: 100vh; overflow: hidden; }
+
+        /* Шапка */
+        .app-header { background: linear-gradient(135deg, #121218, #1a1a24); padding: 12px 20px; display: flex; justify-content: space-between; align-items: center; border-bottom: 2px solid var(--primary-red); box-shadow: 0 4px 15px rgba(255, 23, 68, 0.2); z-index: 10; }
+        .user-info { display: flex; align-items: center; gap: 10px; font-size: 14px; font-weight: bold; }
+        .user-avatar { width: 35px; height: 35px; border-radius: 50%; background: linear-gradient(45deg, var(--primary-red), var(--primary-blue)); display: flex; align-items: center; justify-content: center; font-size: 16px; }
+        .balance-container { background: rgba(255, 215, 0, 0.1); border: 1px solid var(--gold); padding: 6px 14px; border-radius: 20px; color: var(--gold); font-weight: bold; font-size: 15px; display: flex; align-items: center; gap: 6px; box-shadow: inset 0 0 10px rgba(255, 215, 0, 0.1); }
+
+        /* Контент */
+        .app-content { flex: 1; overflow-y: auto; padding: 20px; padding-bottom: 90px; scroll-behavior: smooth; }
+        .tab-pane { display: none; animation: fadeIn 0.3s ease-in-out; }
+        .tab-pane.active { display: block; }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(5px); } to { opacity: 1; transform: translateY(0); } }
+
+        /* Карточки */
+        .card { background-color: var(--bg-card); border: 1px solid var(--border-color); border-radius: 16px; padding: 20px; margin-bottom: 20px; box-shadow: 0 8px 25px rgba(0,0,0,0.5); position: relative; overflow: hidden; }
+        .card::before { content: ''; position: absolute; top: 0; left: 0; width: 4px; height: 100%; background: linear-gradient(to bottom, var(--primary-red), var(--primary-blue)); }
+        
+        h2, h3 { margin-bottom: 12px; font-weight: 800; letter-spacing: 0.5px; }
+        p { color: var(--text-muted); font-size: 14px; margin-bottom: 10px; line-height: 1.5; }
+
+        /* Кнопки */
+        .btn { width: 100%; border: none; padding: 14px 20px; border-radius: 12px; font-weight: bold; font-size: 15px; cursor: pointer; transition: all 0.2s ease; display: flex; align-items: center; justify-content: center; gap: 8px; text-transform: uppercase; letter-spacing: 0.5px; margin-top: 10px; box-shadow: 0 4px 12px rgba(0,0,0,0.3); }
+        .btn-red { background: linear-gradient(135deg, var(--primary-red), var(--dark-red)); color: #fff; }
+        .btn-red:active { transform: scale(0.97); box-shadow: 0 2px 6px rgba(255, 23, 68, 0.4); }
+        .btn-blue { background: linear-gradient(135deg, var(--primary-blue), var(--dark-blue)); color: #fff; }
+        .btn-blue:active { transform: scale(0.97); box-shadow: 0 2px 6px rgba(41, 121, 255, 0.4); }
+        .btn:disabled { background: #2a2a3b; color: #55556b; cursor: not-allowed; box-shadow: none; transform: none; }
+
+        /* Прогресс-бар */
+        .progress-container { margin: 15px 0; }
+        .progress-labels { display: flex; justify-content: space-between; font-size: 13px; font-weight: bold; margin-bottom: 6px; }
+        .progress-bar-bg { width: 100%; height: 18px; background-color: #1a1a24; border-radius: 9px; overflow: hidden; border: 1px solid var(--border-color); position: c; }
+        .progress-bar-fill { height: 100%; background: linear-gradient(90deg, var(--dark-red), var(--primary-red)); border-radius: 9px; transition: width 0.4s cubic-bezier(0.4, 0, 0.2, 1); }
+
+        /* Элементы магазина и списков */
+        .grid-list { display: grid; grid-template-columns: 1fr; gap: 12px; }
+        .list-item { background: var(--bg-card-hover); border: 1px solid var(--border-color); padding: 15px; border-radius: 12px; display: flex; justify-content: space-between; align-items: center; }
+        .item-details h4 { font-size: 15px; margin-bottom: 4px; color: #fff; }
+        .item-details span { font-size: 13px; color: var(--gold); font-weight: bold; }
+
+        /* Поля ввода */
+        .input-group { margin-bottom: 15px; }
+        .input-group label { display: block; font-size: 12px; color: var(--text-muted); margin-bottom: 6px; text-transform: uppercase; font-weight: bold; }
+        input { width: 100%; padding: 12px 15px; background: var(--bg-deep); border: 1px solid var(--border-color); border-radius: 10px; color: #fff; font-size: 15px; outline: none; transition: border-color 0.2s; }
+        input:focus { border-color: var(--primary-blue); }
+
+        /* Навигационная панель снизу */
+        .app-navbar { position: fixed; bottom: 0; left: 0; width: 100%; background: rgba(15, 15, 19, 0.95); backdrop-filter: blur(10px); border-top: 1px solid var(--border-color); display: flex; justify-content: space-around; padding: 10px 0; z-index: 100; box-shadow: 0 -5px 20px rgba(0,0,0,0.5); }
+        .nav-button { background: none; border: none; color: var(--text-muted); font-size: 11px; cursor: pointer; display: flex; flex-direction: column; align-items: center; gap: 4px; flex: 1; transition: color 0.2s; font-weight: 600; }
+        .nav-button span { font-size: 20px; }
+        .nav-button.active { color: var(--primary-red); }
+
+        /* Специфичные блоки */
+        .boss-display { text-align: center; padding: 10px 0; }
+        .boss-avatar-large { font-size: 70px; margin-bottom: 10px; filter: drop-shadow(0 0 20px rgba(255, 23, 68, 0.3)); animation: float 3s ease-in-out infinite; }
+        @keyframes float { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-8px); } }
+        
+        .admin-badge { border: 2px dashed var(--gold); background: rgba(255, 215, 0, 0.05); }
+        .badge-row { display: flex; gap: 10px; }
+    </style>
+</head>
+<body>
+
+    <!-- Шапка приложения -->
+    <header class="app-header">
+        <div class="user-info">
+            <div class="user-avatar">👑</div>
+            <div>
+                <div id="userNameDisplay">Игрок #827145</div>
+                <div style="font-size: 11px; color: var(--text-muted);">ID: <span id="userIdDisplay">8684827145</span></div>
+            </div>
+        </div>
+        <div class="balance-container">
+            <span>💰</span> <span id="globalBalance">100</span> RICH
+        </div>
+    </header>
+
+    <!-- Основные разделы (Вкладки) -->
+    <main class="app-content">
+
+        <!-- ВКЛАДКА 1: БОЙ С БОССОМ -->
+        <section id="tab-fight" class="tab-pane active">
+            <div class="card">
+                <div class="boss-display">
+                    <div class="boss-avatar-large" id="bossIcon">💀</div>
+                    <h2 id="bossName">Скелет</h2>
+                    <p>Клановый босс уровня <span id="currentBossLevelNum">1</span> / 7</p>
+                </div>
+                
+                <div class="progress-container">
+                    <div class="progress-labels">
+                        <span>ЗДОРОВЬЕ БОССА</span>
+                        <span><span id="currentBossHp">1600</span> / <span id="maxBossHp">1600</span> ХП</span>
+                    </div>
+                    <div class="progress-bar-bg">
+                        <div class="progress-fill" id="bossHpBarFill" style="width: 100%;"></div>
+                    </div>
+                </div>
+
+                <div style="background: rgba(25,118,210,0.05); border: 1px solid rgba(41,121,255,0.2); padding: 12px; border-radius: 10px; margin-bottom: 15px; font-size: 13px;">
+                    <p style="margin-bottom: 4px;">⏳ Время жизни босса: <strong id="bossTimerDisplay" style="color: #fff;">24:00:00</strong></p>
+                    <p style="margin-bottom: 0;">⚔ Перезарядка атаки: <strong id="attackCooldownDisplay" style="color: #fff;">Готово к бою!</strong></p>
+                </div>
+
+                <button class="btn btn-red" onclick="triggerBossAttack()">⚔ Нанести удар по боссу</button>
+            </div>
+        </section>
+
+        <!-- ВКЛАДКА 2: КЛАНЫ -->
+        <section id="tab-clans" class="tab-pane">
+            <div class="card">
+                <h3>🏰 Управление кланом</h3>
+                <p>Объединяйтесь с другими игроками (максимум до 25 человек в клане), чтобы совместными силами сокрушать эпических боссов и забирать награды.</p>
+                
+                <div id="noClanContainer">
+                    <div class="input-group" style="margin-top: 15px;">
+                        <label>Название нового клана</label>
+                        <input type="text" id="newClanNameInput" placeholder="Введите название...">
+                    </div>
+                    <button class="btn btn-blue" onclick="createNewClan()">Создать клан (Стоимость: 2 500 RICH)</button>
+                </div>
+
+                <div id="activeClanContainer" style="display: none; margin-top: 15px;">
+                    <div style="background: var(--bg-deep); padding: 15px; border-radius: 12px; margin-bottom: 15px;">
+                        <h4 id="myClanNameDisplay" style="color: var(--gold); margin-bottom: 5px;">Название Клана</h4>
+                        <p style="margin-bottom: 0;">Участники: <span id="myClanMembersCount">1</span> / 25 человек</p>
+                    </div>
+                    <button class="btn btn-red" onclick="leaveCurrentClan()">Покинуть клан</button>
+                </div>
+            </div>
+        </section>
+
+        <!-- ВКЛАДКА 3: МАГАЗИН ОРУЖИЯ -->
+        <section id="tab-shop" class="tab-pane">
+            <div class="card" style="padding-bottom: 10px;">
+                <h3>🛒 Оружейный арсенал</h3>
+                <p>Покупайте мощное оружие, чтобы увеличивать свою силу атаки. (1 сила = 2 урона боссу).</p>
+            </div>
+            <div class="grid-list" id="weaponsGridContainer">
+                <!-- Динамически заполняется скриптом -->
+            </div>
+        </section>
+
+        <!-- ВКЛАДКА 4: ЗАДАНИЯ И РЕФЕРАЛЫ -->
+        <section id="tab-tasks" class="tab-pane">
+            <div class="card">
+                <h3>📋 Ежедневные задания</h3>
+                <p>Заходите каждый день и получайте бонусы для прокачки своего арсенала.</p>
+                <button class="btn btn-blue" onclick="claimDailyBonusTask()">Забрать бонус (+50 RICH)</button>
+            </div>
+
+            <div class="card">
+                <h3>👥 Реферальная система</h3>
+                <p>Приглашайте друзей в бота и развивайте клан вместе.</p>
+                <div class="input-group" style="margin-top: 10px;">
+                    <label>Ваша уникальная ссылка</label>
+                    <input type="text" id="refLinkInput" readonly value="https://t.me/Richgame11_bot?start=ref_8684827145">
+                </div>
+                <button class="btn btn-red" onclick="copyReferralLink()">Скопировать ссылку</button>
+            </div>
+        </section>
+
+        <!-- ВКЛАДКА 5: ПРОФИЛЬ И АДМИНКА -->
+        <section id="tab-profile" class="tab-pane">
+            <div class="card">
+                <h3>👤 Данные профиля</h3>
+                <p>Текущая сила атаки героя: <strong id="userPowerDisplay" style="color: #fff; font-size: 16px;">10</strong> сил</p>
+                <p>Расчетный урон за один удар: <strong id="userDamageDisplay" style="color: var(--gold); font-size: 16px;">20</strong> ХП</p>
+                
+                <div class="badge-row" style="margin-top: 15px;">
+                    <button class="btn btn-blue" onclick="openWithdrawalModal()">Вывод средств</button>
+                    <button class="btn btn-red" onclick="openManualTopUpModal()">Ручное пополнение</button>
+                </div>
+            </div>
+
+            <!-- АДМИН-ПАНЕЛЬ (Строго для твоего ID 8684827145) -->
+            <div class="card admin-badge" id="adminPanelCard" style="display: none;">
+                <h3 style="color: var(--gold);">👑 Панель Администратора</h3>
+                <p>Специальный инструмент управления игровым балансом.</p>
+                
+                <div class="input-group">
+                    <label>Сумма RICH для начисления / списания</label>
+                    <input type="number" id="adminAmountInput" placeholder="Например: 5000">
+                </div>
+                <button class="btn btn-red" onclick="executeAdminBalanceOperation()">Выполнить операцию</button>
+            </div>
+        </section>
+
+    </main>
+
+    <!-- Нижняя навигация -->
+    <nav class="app-navbar">
+        <button class="nav-button active" onclick="switchTab(1, this)"><span>⚔</span> Бой</button>
+        <button class="nav-button" onclick="switchTab(2, this)"><span>🏰</span> Кланы</button>
+        <button class="nav-button" onclick="switchTab(3, this)"><span>🛒</span> Магазин</button>
+        <button class="nav-button" onclick="switchTab(4, this)"><span>📋</span> Задания</button>
+        <button class="nav-button" onclick="switchTab(5, this)"><span>👤</span> Профиль</button>
+    </nav>
+
+    <script>
+        // Игровые константы и конфигурация
+        const ADMIN_TELEGRAM_ID = 8684827145;
+        const TON_WALLET_ADDRESS = "UQDmNY1TIMIgnALOpAyJ4_XO2uroUNLFVRwGie5AEwzccaps";
+
+        // Массив боссов (ХП увеличено в x2, награды сбалансированы)
+        const gameBossesData = [
+            { name: "Скелет", icon: "💀", hp: 1600, reward: 800 },
+            { name: "Ведьма", icon: "🧙", hp: 2000, reward: 1000 },
+            { name: "Вампир", icon: "🦇", hp: 2400, reward: 1300 },
+            { name: "Дракон", icon: "🐉", hp: 3000, reward: 1600 },
+            { name: "Демон", icon: "👹", hp: 4000, reward: 2500 },
+            { name: "Кибер-Титан", icon: "🦾", hp: 7000, reward: 4000 },
+            { name: "Повелитель Бездны", icon: "👑", hp: 10000, reward: 7000 }
+        ];
+
+        // Магазин оружия (Цены увеличены в х3, макс до 10500 RICH)
+        const gameWeaponsData = [
+            { id: 1, name: "🗡 Ржавый Меч", power: 3, price: 450 },
+            { id: 2, name: "⚔ Стальной Клинок", power: 7, price: 1200 },
+            { id: 3, name: "🪓 Топор Берсерка", power: 15, price: 2700 },
+            { id: 4, name: "🔥 Меч Огненного Дракона", power: 30, price: 6000 },
+            { id: 5, name: "⚡ Легендарный Молот", power: 50, price: 10500 }
+        ];
+
+        // Инициализация игрового состояния из LocalStorage
+        let gameState = JSON.parse(localStorage.getItem('rich_game_ultimate_save')) || {
+            balance: 1500,
+            power: 10,
+            bossLevelIndex: 0,
+            currentBossHp: 1600,
+            lastAttackTimestamp: 0,
+            bossExpiryTimestamp: Date.now() + (24 * 3600 * 1000),
+            userClanName: null,
+            clanMembersCount: 1,
+            purchasedWeaponsIds: []
+        };
+
+        // Сохранение и обновление интерфейса
+        function saveAndRefreshGameData() {
+            localStorage.setItem('rich_game_ultimate_save', JSON.stringify(gameState));
+            renderUserInterface();
+        }
+
+        function renderUserInterface() {
+            // Баланс и профиль
+            document.getElementById('globalBalance').innerText = gameState.balance;
+            document.getElementById('userPowerDisplay').innerText = gameState.power;
+            document.getElementById('userDamageDisplay').innerText = gameState.power * 2; // 1 сила = 2 урона
+
+            // Босс
+            const activeBoss = gameBossesData[gameState.bossLevelIndex];
+            document.getElementById('bossName').innerText = activeBoss.name;
+            document.getElementById('bossIcon').innerText = activeBoss.icon;
+            document.getElementById('currentBossLevelNum').innerText = gameState.bossLevelIndex + 1;
+            document.getElementById('currentBossHp').innerText = Math.max(0, gameState.currentBossHp);
+            document.getElementById('maxBossHp').innerText = activeBoss.hp;
+            
+            let hpPercentage = (gameState.currentBossHp / activeBoss.hp) * 100;
+            document.getElementById('bossHpBarFill').style.width = Math.max(0, Math.min(100, hpPercentage)) + '%';
+
+            // Кланы
+            if (gameState.userClanName) {
+                document.getElementById('noClanContainer').style.display = 'none';
+                document.getElementById('activeClanContainer').style.display = 'block';
+                document.getElementById('myClanNameDisplay').innerText = gameState.userClanName;
+                document.getElementById('myClanMembersCount').innerText = gameState.clanMembersCount;
+            } else {
+                document.getElementById('noClanContainer').style.display = 'block';
+                document.getElementById('activeClanContainer').style.display = 'none';
+            }
+
+            // Рендер магазина
+            renderShopWeaponsList();
+
+            // Проверка прав администратора
+            let currentTelegramUserId = ADMIN_TELEGRAM_ID; // Заглушка под твой ID
+            if (currentTelegramUserId === ADMIN_TELEGRAM_ID) {
+                document.getElementById('adminPanelCard').style.display = 'block';
+            }
+        }
+
+        // Переключение вкладок
+        function switchTab(tabIndex, buttonElement) {
+            document.querySelectorAll('.tab-pane').forEach(pane => pane.classList.remove('active'));
+            document.querySelectorAll('.nav-button').forEach(btn => btn.classList.remove('active'));
+
+            document.getElementById(`tab-${getTabName(tabIndex)}`).classList.add('active');
+            buttonElement.classList.add('active');
+        }
+
+        function getTabName(index) {
+            switch(index) {
+                case 1: return 'fight';
+                case 2: return 'clans';
+                case 3: return 'shop';
+                case 4: return 'tasks';
+                case 5: return 'profile';
+                default: return 'fight';
+            }
+        }
+
+        // Логика атаки босса (кулдаун 3 часа)
+        function triggerBossAttack() {
+            let currentTime = Date.now();
+            let cooldownTimeMs = 3 * 3600 * 1000; // 3 часа
+
+            if (currentTime - gameState.lastAttackTimestamp < cooldownTimeMs) {
+                let remainingMs = cooldownTimeMs - (currentTime - gameState.lastAttackTimestamp);
+                let hoursLeft = Math.floor(remainingMs / (3600 * 1000));
+                let minutesLeft = Math.floor((remainingMs % (3600 * 1000)) / (60 * 1000));
+                alert(`Атака перезаряжается! Подождите еще ${hoursLeft}ч. ${minutesLeft}мин.`);
+                return;
+            }
+
+            // Проверка времени жизни босса (24 часа)
+            if (currentTime > gameState.bossExpiryTimestamp) {
+                alert("Время жизни босса истекло! Он сбежал, здоровье сброшено.");
+                gameState.currentBossHp = gameBossesData[gameState.bossLevelIndex].hp;
+                gameState.bossExpiryTimestamp = currentTime + (24 * 3600 * 1000);
+            }
+
+            // Урон: 1 сила = 2 хп
+            let dealtDamage = gameState.power * 2;
+            gameState.currentBossHp -= dealtDamage;
+            gameState.lastAttackTimestamp = currentTime;
+
+            if (gameState.currentBossHp <= 0) {
+                let rewardAmount = gameBossesData[gameState.bossLevelIndex].reward;
+                alert(`🏆 Победа! Босс повержен. Клан получает награду: ${rewardAmount} RICH!`);
+                gameState.balance += rewardAmount;
+                
+                // Переход к следующему боссу
+                gameState.bossLevelIndex = (gameState.bossLevelIndex + 1) % gameBossesData.length;
+                gameState.currentBossHp = gameBossesData[gameState.bossLevelIndex].hp;
+                gameState.bossExpiryTimestamp = Date.now() + (24 * 3600 * 1000);
+            } else {
+                alert(`Вы успешно атаковали босса и нанесли ${dealtDamage} ед. урона!`);
+            }
+
+            saveAndRefreshGameData();
+        }
+
+        // Создание клана
+        function createNewClan() {
+            let clanName = document.getElementById('newClanNameInput').value.trim();
+            if (!clanName) {
+                alert("Введите название клана!");
+                return;
+            }
+            if (gameState.balance < 2500) {
+                alert("Недостаточно средств! Нужно 2,500 RICH.");
+                return;
+            }
+
+            gameState.balance -= 2500;
+            gameState.userClanName = clanName;
+            gameState.clanMembersCount = 1; // Лимит до 25 человек
+            alert(`Клан «${clanName}» успешно создан!`);
+            saveAndRefreshGameData();
+        }
+
+        function leaveCurrentClan() {
+            if (confirm("Вы действительно хотите покинуть клан? Прогресс босса сбросится.")) {
+                gameState.userClanName = null;
+                gameState.clanMembersCount = 1;
+                saveAndRefreshGameData();
+            }
+        }
+
+        // Рендер магазина оружия
+        function renderShopWeaponsList() {
+            let container = document.getElementById('weaponsGridContainer');
+            container.innerHTML = '';
+
+            gameWeaponsData.forEach(weapon => {
+                let isAlreadyBought = gameState.purchasedWeaponsIds.includes(weapon.id);
+                container.innerHTML += `
+                    <div class="list-item">
+                        <div class="item-details">
+                            <h4>${weapon.name}</h4>
+                            <p style="margin-bottom:0;">Дает силу: +${weapon.power} (+${weapon.power * 2} урона)</p>
+                            <span>Цена: ${weapon.price} RICH</span>
+                        </div>
+                        <button class="btn ${isAlreadyBought ? '' : 'btn-red'}" style="width: auto; padding: 10px 16px; margin-top:0;" ${isAlreadyBought ? 'disabled' : ''} onclick="buyWeaponItem(${weapon.id}, ${weapon.price}, ${weapon.power})">
+                            ${isAlreadyBought ? 'Куплено' : 'Купить'}
+                        </button>
+                    </div>
+                `;
+            });
+        }
+
+        function buyWeaponItem(id, price, powerBonus) {
+            if (gameState.balance < price) {
+                alert("Недостаточно RICH на балансе!");
+                return;
+            }
+
+            gameState.balance -= price;
+            gameState.power += powerBonus;
+            gameState.purchasedWeaponsIds.push(id);
+            alert("Оружие успешно приобретено и добавлено к вашей силе!");
+            saveAndRefreshGameData();
+        }
+
+        // Задания и рефералы
+        function claimDailyBonusTask() {
+            gameState.balance += 50;
+            alert("Ежедневный бонус +50 RICH успешно зачислен!");
+            saveAndRefreshGameData();
+        }
+
+        function copyReferralLink() {
+            let refInput = document.getElementById('refLinkInput');
+            refInput.select();
+            navigator.clipboard.writeText(refInput.value);
+            alert("Реферальная ссылка скопирована в буфер обмена!");
+        }
+
+        // Вывод и ручное пополнение
+        function openWithdrawalModal() {
+            let amountToWithdraw = prompt("Введите сумму RICH для вывода (минимально 3 000 RICH):", "3000");
+            if (!amountToWithdraw) return;
+            if (parseInt(amountToWithdraw) < 3000) {
+                alert("Минимальная сумма для вывода составляет 3 000 RICH!");
+                return;
+            }
+            if (gameState.balance < parseInt(amountToWithdraw)) {
+                alert("У вас недостаточно средств на балансе для такого вывода!");
+                return;
+            }
+            gameState.balance -= parseInt(amountToWithdraw);
+            alert("Заявка на вывод средств успешно создана и отправлена в обработку!");
+            saveAndRefreshGameData();
+        }
+
+        function openManualTopUpModal() {
+            alert(`Ручное пополнение:\nПереведите TON на официальный кошелек:\n\n${TON_WALLET_ADDRESS}\n\nПосле перевода средства будут зачислены администратором.`);
+        }
+
+        // Админ-панель
+        function executeAdminBalanceOperation() {
+            let inputVal = parseInt(document.getElementById('adminAmountInput').value);
+            if (isNaN(inputVal)) {
+                alert("Введите корректное число!");
+                return;
+            }
+            gameState.balance += inputVal;
+            alert(`Админ-операция выполнена! Изменение баланса: ${inputVal > 0 ? '+' : ''}${inputVal} RICH.`);
+            saveAndRefreshGameData();
+        }
+
+        // Таймер обратного отсчета для босса
+        setInterval(() => {
+            let differenceMs = gameState.bossExpiryTimestamp - Date.now();
+            if (differenceMs <= 0) {
+                document.getElementById('bossTimerDisplay').innerText = "Время вышло!";
+                return;
+            }
+            let h = Math.floor(differenceMs / 3600000);
+            let m = Math.floor((differenceMs % 3600000) / 60000);
+            let s = Math.floor((differenceMs % 60000) / 1000);
+            document.getElementById('bossTimerDisplay').innerText = `${h}ч ${m}м ${s}с`;
+        }, 1000);
+
+        // Первичный запуск отрисовки
+        renderUserInterface();
+    </script>
+</body>
+</html>
