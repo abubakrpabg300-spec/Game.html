@@ -1,0 +1,615 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>RICH GAME: ULTIMATE EDITION</title>
+    <style>
+        :root {
+            --primary-red: #ff1744;
+            --dark-red: #b71c1c;
+            --primary-blue: #2979ff;
+            --dark-blue: #0d47a1;
+            --bg-deep: #070709;
+            --bg-card: #121218;
+            --bg-card-hover: #1a1a24;
+            --border-color: #2a2a3b;
+            --gold: #ffd700;
+            --text-main: #ffffff;
+            --text-muted: #9e9eb0;
+            --success: #00e676;
+        }
+
+        * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }
+        body { background-color: var(--bg-deep); color: var(--text-main); display: flex; flex-direction: column; height: 100vh; overflow: hidden; }
+
+        .app-header { background: linear-gradient(135deg, #121218, #1a1a24); padding: 12px 20px; display: flex; justify-content: space-between; align-items: center; border-bottom: 2px solid var(--primary-red); z-index: 10; box-shadow: 0 4px 20px rgba(255, 23, 68, 0.15); }
+        .user-info { display: flex; align-items: center; gap: 10px; font-size: 14px; font-weight: bold; }
+        .user-avatar { width: 38px; height: 38px; border-radius: 50%; background: linear-gradient(45deg, var(--primary-red), var(--primary-blue)); display: flex; align-items: center; justify-content: center; font-size: 18px; box-shadow: 0 0 10px rgba(41, 121, 255, 0.4); }
+        .balance-container { background: rgba(255, 215, 0, 0.1); border: 1px solid var(--gold); padding: 6px 14px; border-radius: 20px; color: var(--gold); font-weight: bold; font-size: 15px; display: flex; align-items: center; gap: 6px; box-shadow: inset 0 0 10px rgba(255, 215, 0, 0.1); }
+
+        .app-content { flex: 1; overflow-y: auto; padding: 20px; padding-bottom: 100px; scroll-behavior: smooth; }
+        .tab-pane { display: none; animation: fadeIn 0.3s ease; }
+        .tab-pane.active { display: block; }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(4px); } to { opacity: 1; transform: translateY(0); } }
+
+        .card { background-color: var(--bg-card); border: 1px solid var(--border-color); border-radius: 18px; padding: 20px; margin-bottom: 20px; position: relative; overflow: hidden; box-shadow: 0 10px 30px rgba(0,0,0,0.5); }
+        .card::before { content: ''; position: absolute; top: 0; left: 0; width: 4px; height: 100%; background: linear-gradient(to bottom, var(--primary-red), var(--primary-blue)); }
+        
+        h2, h3 { margin-bottom: 12px; font-weight: 800; letter-spacing: 0.5px; }
+        p { color: var(--text-muted); font-size: 14px; margin-bottom: 10px; line-height: 1.5; }
+
+        .btn { width: 100%; border: none; padding: 14px 20px; border-radius: 12px; font-weight: bold; font-size: 15px; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 8px; text-transform: uppercase; margin-top: 10px; transition: transform 0.1s ease, filter 0.2s ease; box-shadow: 0 4px 15px rgba(0,0,0,0.3); }
+        .btn:active { transform: scale(0.97); }
+        .btn-red { background: linear-gradient(135deg, var(--primary-red), var(--dark-red)); color: #fff; }
+        .btn-blue { background: linear-gradient(135deg, var(--primary-blue), var(--dark-blue)); color: #fff; }
+        .btn-success { background: linear-gradient(135deg, #00e676, #00c853); color: #000; }
+        .btn:disabled { background: #2a2a3b; color: #55556b; cursor: not-allowed; box-shadow: none; }
+
+        .progress-container { margin: 15px 0; }
+        .progress-labels { display: flex; justify-content: space-between; font-size: 13px; font-weight: bold; margin-bottom: 6px; }
+        .progress-bar-bg { width: 100%; height: 18px; background-color: #1a1a24; border-radius: 9px; overflow: hidden; border: 1px solid var(--border-color); }
+        .progress-bar-fill { height: 100%; background: linear-gradient(90deg, var(--dark-red), var(--primary-red)); border-radius: 9px; transition: width 0.4s; }
+
+        .grid-list { display: grid; grid-template-columns: 1fr; gap: 12px; }
+        .list-item { background: var(--bg-card-hover); border: 1px solid var(--border-color); padding: 15px; border-radius: 14px; display: flex; justify-content: space-between; align-items: center; box-shadow: 0 4px 12px rgba(0,0,0,0.2); }
+        .item-details h4 { font-size: 15px; margin-bottom: 4px; color: #fff; }
+        .item-details span { font-size: 13px; color: var(--gold); font-weight: bold; }
+
+        .input-group { margin-bottom: 15px; }
+        .input-group label { display: block; font-size: 12px; color: var(--text-muted); margin-bottom: 6px; text-transform: uppercase; font-weight: bold; }
+        input { width: 100%; padding: 12px 15px; background: var(--bg-deep); border: 1px solid var(--border-color); border-radius: 10px; color: #fff; font-size: 15px; outline: none; transition: border-color 0.2s; }
+        input:focus { border-color: var(--primary-blue); }
+
+        .app-navbar { position: fixed; bottom: 0; left: 0; width: 100%; background: rgba(15, 15, 19, 0.95); backdrop-filter: blur(10px); border-top: 1px solid var(--border-color); display: flex; justify-content: space-around; padding: 10px 0; z-index: 100; box-shadow: 0 -5px 25px rgba(0,0,0,0.6); }
+        .nav-button { background: none; border: none; color: var(--text-muted); font-size: 11px; cursor: pointer; display: flex; flex-direction: column; align-items: center; gap: 4px; flex: 1; font-weight: 600; transition: color 0.2s; }
+        .nav-button span { font-size: 20px; }
+        .nav-button.active { color: var(--primary-red); }
+
+        .boss-display { text-align: center; padding: 10px 0; }
+        .boss-avatar-large { font-size: 75px; margin-bottom: 10px; filter: drop-shadow(0 0 25px rgba(255, 23, 68, 0.4)); animation: float 3s ease-in-out infinite; }
+        @keyframes float { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-8px); } }
+        
+        .badge-row { display: flex; gap: 10px; }
+        .admin-withdrawal-item { background: var(--bg-deep); border: 1px solid var(--border-color); padding: 12px; border-radius: 10px; margin-bottom: 10px; font-size: 13px; }
+    </style>
+</head>
+<body>
+
+    <!-- Шапка -->
+    <header class="app-header">
+        <div class="user-info">
+            <div class="user-avatar">👑</div>
+            <div>
+                <div id="userNameDisplay">Игрок #827145</div>
+                <div style="font-size: 11px; color: var(--text-muted);">ID: <span id="userIdDisplay">8684827145</span></div>
+            </div>
+        </div>
+        <div class="balance-container">
+            <span>💰</span> <span id="globalBalance">1500</span> RICH
+        </div>
+    </header>
+
+    <!-- Основной контент -->
+    <main class="app-content">
+
+        <!-- 1. БОЙ С БОССОМ -->
+        <section id="tab-fight" class="tab-pane active">
+            <div class="card">
+                <div class="boss-display">
+                    <div class="boss-avatar-large" id="bossIcon">💀</div>
+                    <h2 id="bossName">Скелет</h2>
+                    <p>Клановый босс уровня <span id="currentBossLevelNum">1</span> / 7</p>
+                </div>
+                
+                <div class="progress-container">
+                    <div class="progress-labels">
+                        <span>ЗДОРОВЬЕ БОССА</span>
+                        <span><span id="currentBossHp">1600</span> / <span id="maxBossHp">1600</span> ХП</span>
+                    </div>
+                    <div class="progress-bar-bg">
+                        <div class="progress-fill" id="bossHpBarFill" style="width: 100%;"></div>
+                    </div>
+                </div>
+
+                <div style="background: rgba(25,118,210,0.05); border: 1px solid rgba(41,121,255,0.2); padding: 12px; border-radius: 12px; margin-bottom: 15px; font-size: 13px;">
+                    <p style="margin-bottom: 4px;">⏳ Сброс босса через: <strong id="bossTimerDisplay" style="color: #fff;">24:00:00</strong></p>
+                    <p style="margin-bottom: 0;">⚔ Кулдаун удара: <strong id="attackCooldownDisplay" style="color: #fff;">Готово к бою!</strong></p>
+                </div>
+
+                <button class="btn btn-red" onclick="triggerBossAttack()">⚔ Нанести удар по боссу</button>
+            </div>
+        </section>
+
+        <!-- 2. КЛАНЫ -->
+        <section id="tab-clans" class="tab-pane">
+            <div class="card">
+                <h3>🏰 Кланы и Сражения</h3>
+                <p>Вы можете свободно атаковать босса даже без клана! Но в клане веселее. Создатель клана имеет права удалять участников.</p>
+                
+                <div id="noClanContainer">
+                    <div class="input-group" style="margin-top: 15px;">
+                        <label>Название нового клана</label>
+                        <input type="text" id="newClanNameInput" placeholder="Введите название клана...">
+                    </div>
+                    <button class="btn btn-blue" onclick="createNewClan()">Создать клан (Стоимость: 2 500 RICH)</button>
+                </div>
+
+                <div id="activeClanContainer" style="display: none; margin-top: 15px;">
+                    <div style="background: var(--bg-deep); padding: 15px; border-radius: 12px; margin-bottom: 15px; border: 1px solid var(--border-color);">
+                        <h4 id="myClanNameDisplay" style="color: var(--gold); margin-bottom: 5px;">Название Клана</h4>
+                        <p style="margin-bottom: 5px;">Создатель: <span id="clanOwnerDisplay">Вы</span></p>
+                        <p style="margin-bottom: 10px;">Участники (<span id="myClanMembersCount">1</span> / 25):</p>
+                        <div id="clanMembersListContainer" style="font-size: 13px; color: #ccc; margin-bottom: 10px;"></div>
+                    </div>
+                    
+                    <div class="input-group" id="clanAdminControls" style="display:none;">
+                        <label>Управление участниками</label>
+                        <input type="text" id="memberNameToKick" placeholder="Имя участника для удаления">
+                        <button class="btn btn-red" onclick="kickClanMember()">Удалить участника из клана</button>
+                    </div>
+
+                    <button class="btn btn-red" style="margin-top: 15px;" onclick="leaveCurrentClan()">Покинуть клан</button>
+                </div>
+            </div>
+        </section>
+
+        <!-- 3. МАГАЗИН -->
+        <section id="tab-shop" class="tab-pane">
+            <div class="card" style="padding-bottom: 10px;">
+                <h3>🛒 Оружейный арсенал</h3>
+                <p>Покупайте оружие для роста вашей силы (1 сила = 2 урона боссу).</p>
+            </div>
+            <div class="grid-list" id="weaponsGridContainer"></div>
+        </section>
+
+        <!-- 4. ЗАДАНИЯ И РЕФЕРАЛЫ -->
+        <section id="tab-tasks" class="tab-pane">
+            <div class="card">
+                <h3>📋 Задания и Подписки</h3>
+                <p>Заполните превью перед выполнением задания, чтобы получить награду на ваш кошелек.</p>
+                
+                <div class="input-group">
+                    <label>Название игры / Профиля</label>
+                    <input type="text" id="taskGameName" placeholder="Ваше игровое имя...">
+                </div>
+                <div class="input-group">
+                    <label>Адрес вашего кошелька для выплаты</label>
+                    <input type="text" id="taskWalletAddr" placeholder="TON / Crypto адрес...">
+                </div>
+
+                <div style="background: var(--bg-deep); padding: 15px; border-radius: 12px; margin-top: 15px; border: 1px solid var(--border-color);">
+                    <h4 style="color: #fff; margin-bottom: 5px;">📢 Подписка на официальный канал</h4>
+                    <p style="font-size: 13px; margin-bottom: 12px;">Награда: <strong style="color: var(--gold);">+100 RICH</strong></p>
+                    <div class="badge-row">
+                        <button class="btn btn-blue" style="margin-top:0;" onclick="window.open('https://t.me/telegram', '_blank')">Заходить</button>
+                        <button class="btn btn-success" style="margin-top:0;" onclick="verifyTaskChannel()">Проверить</button>
+                    </div>
+                </div>
+
+                <!-- Динамические задания от админа -->
+                <div id="dynamicTasksContainer" style="margin-top: 15px;"></div>
+            </div>
+
+            <div class="card">
+                <h3>👥 Реферальная система</h3>
+                <p>Приглашайте друзей и развивайтесь быстрее.</p>
+                <div class="input-group" style="margin-top: 10px;">
+                    <label>Ваша реферальная ссылка</label>
+                    <input type="text" id="refLinkInput" readonly value="https://t.me/Richgame11_bot?start=ref_8684827145">
+                </div>
+                <button class="btn btn-red" onclick="copyReferralLink()">Скопировать ссылку</button>
+            </div>
+        </section>
+
+        <!-- 5. ПРОФИЛЬ И ВЫВОД -->
+        <section id="tab-profile" class="tab-pane">
+            <div class="card">
+                <h3>👤 Профиль игрока</h3>
+                <p>Сила героя: <strong id="userPowerDisplay" style="color: #fff; font-size: 16px;">10</strong> сил</p>
+                <p>Урон за один удар: <strong id="userDamageDisplay" style="color: var(--gold); font-size: 16px;">20</strong> ХП</p>
+                
+                <div class="badge-row" style="margin-top: 15px;">
+                    <button class="btn btn-blue" onclick="openWithdrawalModal()">Заявка на вывод</button>
+                    <button class="btn btn-red" onclick="openManualTopUpModal()">Ручное пополнение</button>
+                </div>
+            </div>
+
+            <!-- АДМИН-ПАНЕЛЬ -->
+            <div class="card" id="adminPanelCard" style="border: 2px dashed var(--gold); display:none;">
+                <h3 style="color: var(--gold);">👑 Панель Администратора</h3>
+                
+                <div class="input-group" style="margin-top: 10px;">
+                    <label>ID игрока</label>
+                    <input type="text" id="admTargetId" placeholder="Например: 8684827145">
+                </div>
+                <div class="input-group">
+                    <label>Сумма RICH (+ начисление, - снятие)</label>
+                    <input type="number" id="admAmountInput" placeholder="Например: 1000 или -500">
+                </div>
+                <button class="btn btn-red" onclick="executeAdminBalanceOperation()">Применить баланс</button>
+
+                <hr style="border: 0; border-top: 1px solid var(--border-color); margin: 20px 0;">
+
+                <h4 style="margin-bottom: 10px;">Управление заданиями</h4>
+                <div class="input-group">
+                    <label>Текст нового задания</label>
+                    <input type="text" id="admNewTaskText" placeholder="Например: Подписаться на чат">
+                </div>
+                <div class="badge-row">
+                    <button class="btn btn-blue" style="margin-top:0;" onclick="adminAddTask()">Добавить задание</button>
+                    <button class="btn btn-red" style="margin-top:0;" onclick="adminRemoveTask()">Удалить последнее</button>
+                </div>
+
+                <hr style="border: 0; border-top: 1px solid var(--border-color); margin: 20px 0;">
+
+                <h4 style="margin-bottom: 10px;">Заявки на вывод средств</h4>
+                <div id="adminWithdrawalsList">
+                    <p style="font-size:13px; color:#777;">Нет активных заявок на вывод.</p>
+                </div>
+            </div>
+        </section>
+
+    </main>
+
+    <!-- Нижняя навигация -->
+    <nav class="app-navbar">
+        <button class="nav-button active" onclick="switchTab(1, this)"><span>⚔</span> Бой</button>
+        <button class="nav-button" onclick="switchTab(2, this)"><span>🏰</span> Кланы</button>
+        <button class="nav-button" onclick="switchTab(3, this)"><span>🛒</span> Магазин</button>
+        <button class="nav-button" onclick="switchTab(4, this)"><span>📋</span> Задания</button>
+        <button class="nav-button" onclick="switchTab(5, this)"><span>👤</span> Профиль</button>
+    </nav>
+
+    <script>
+        const ADMIN_TELEGRAM_ID = 8684827145;
+        const MY_WALLET_ADDRESS = "UQDmNY1TIMIgnALOpAyJ4_XO2uroUNLFVRwGie5AEwzccaps";
+
+        const gameBossesData = [
+            { name: "Скелет", icon: "💀", hp: 1600, reward: 800 },
+            { name: "Ведьма", icon: "🧙", hp: 2000, reward: 1000 },
+            { name: "Вампир", icon: "🦇", hp: 2400, reward: 1300 },
+            { name: "Дракон", icon: "🐉", hp: 3000, reward: 1600 },
+            { name: "Демон", icon: "👹", hp: 4000, reward: 2500 },
+            { name: "Кибер-Титан", icon: "🦾", hp: 7000, reward: 4000 },
+            { name: "Повелитель Бездны", icon: "👑", hp: 10000, reward: 7000 }
+        ];
+
+        const gameWeaponsData = [
+            { id: 1, name: "🗡 Ржавый Меч", power: 3, price: 450 },
+            { id: 2, name: "⚔ Стальной Клинок", power: 7, price: 1200 },
+            { id: 3, name: "🪓 Топор Берсерка", power: 15, price: 2700 },
+            { id: 4, name: "🔥 Меч Огненного Дракона", power: 30, price: 6000 },
+            { id: 5, name: "⚡ Легендарный Молот", power: 50, price: 10500 }
+        ];
+
+        let gameState = JSON.parse(localStorage.getItem('rich_game_v4_save')) || {
+            balance: 1500,
+            power: 10,
+            bossLevelIndex: 0,
+            currentBossHp: 1600,
+            lastAttackTimestamp: 0,
+            bossExpiryTimestamp: Date.now() + (24 * 3600 * 1000),
+            userClanName: null,
+            isClanOwner: false,
+            clanMembers: ["Игрок #827145"],
+            purchasedWeaponsIds: [],
+            customTasks: [],
+            withdrawalRequests: []
+        };
+
+        function saveAndRefreshGameData() {
+            localStorage.setItem('rich_game_v4_save', JSON.stringify(gameState));
+            renderUserInterface();
+        }
+
+        function renderUserInterface() {
+            document.getElementById('globalBalance').innerText = gameState.balance;
+            document.getElementById('userPowerDisplay').innerText = gameState.power;
+            document.getElementById('userDamageDisplay').innerText = gameState.power * 2;
+
+            const activeBoss = gameBossesData[gameState.bossLevelIndex];
+            document.getElementById('bossName').innerText = activeBoss.name;
+            document.getElementById('bossIcon').innerText = activeBoss.icon;
+            document.getElementById('currentBossLevelNum').innerText = gameState.bossLevelIndex + 1;
+            document.getElementById('currentBossHp').innerText = Math.max(0, gameState.currentBossHp);
+            document.getElementById('maxBossHp').innerText = activeBoss.hp;
+            
+            let hpPercentage = (gameState.currentBossHp / activeBoss.hp) * 100;
+            document.getElementById('bossHpBarFill').style.width = Math.max(0, Math.min(100, hpPercentage)) + '%';
+
+            if (gameState.userClanName) {
+                document.getElementById('noClanContainer').style.display = 'none';
+                document.getElementById('activeClanContainer').style.display = 'block';
+                document.getElementById('myClanNameDisplay').innerText = gameState.userClanName;
+                document.getElementById('clanOwnerDisplay').innerText = gameState.isClanOwner ? "Вы (Создатель)" : "Участник";
+                document.getElementById('myClanMembersCount').innerText = gameState.clanMembers.length;
+                document.getElementById('clanMembersListContainer').innerText = gameState.clanMembers.join(", ");
+
+                if (gameState.isClanOwner) {
+                    document.getElementById('clanAdminControls').style.display = 'block';
+                } else {
+                    document.getElementById('clanAdminControls').style.display = 'none';
+                }
+            } else {
+                document.getElementById('noClanContainer').style.display = 'block';
+                document.getElementById('activeClanContainer').style.display = 'none';
+            }
+
+            renderShopWeaponsList();
+            renderDynamicTasks();
+
+            let currentTelegramUserId = ADMIN_TELEGRAM_ID;
+            if (currentTelegramUserId === ADMIN_TELEGRAM_ID) {
+                document.getElementById('adminPanelCard').style.display = 'block';
+                renderAdminWithdrawals();
+            }
+        }
+
+        function switchTab(tabIndex, buttonElement) {
+            document.querySelectorAll('.tab-pane').forEach(pane => pane.classList.remove('active'));
+            document.querySelectorAll('.nav-button').forEach(btn => btn.classList.remove('active'));
+            document.getElementById(`tab-${getTabName(tabIndex)}`).classList.add('active');
+            buttonElement.classList.add('active');
+        }
+
+        function getTabName(index) {
+            switch(index) {
+                case 1: return 'fight';
+                case 2: return 'clans';
+                case 3: return 'shop';
+                case 4: return 'tasks';
+                case 5: return 'profile';
+                default: return 'fight';
+            }
+        }
+
+        function triggerBossAttack() {
+            let currentTime = Date.now();
+            let cooldownTimeMs = 3 * 3600 * 1000;
+
+            if (currentTime - gameState.lastAttackTimestamp < cooldownTimeMs) {
+                let remainingMs = cooldownTimeMs - (currentTime - gameState.lastAttackTimestamp);
+                let hoursLeft = Math.floor(remainingMs / (3600 * 1000));
+                let minutesLeft = Math.floor((remainingMs % (3600 * 1000)) / (60 * 1000));
+                alert(`Атака перезаряжается! Осталось ${hoursLeft}ч. ${minutesLeft}мин.`);
+                return;
+            }
+
+            if (currentTime > gameState.bossExpiryTimestamp) {
+                alert("Время жизни босса истекло! Здоровье сброшено.");
+                gameState.currentBossHp = gameBossesData[gameState.bossLevelIndex].hp;
+                gameState.bossExpiryTimestamp = currentTime + (24 * 3600 * 1000);
+            }
+
+            let dealtDamage = gameState.power * 2;
+            gameState.currentBossHp -= dealtDamage;
+            gameState.lastAttackTimestamp = currentTime;
+
+            if (gameState.currentBossHp <= 0) {
+                let rewardAmount = gameBossesData[gameState.bossLevelIndex].reward;
+                alert(`🏆 Босс побежден! Награда: ${rewardAmount} RICH!`);
+                gameState.balance += rewardAmount;
+                gameState.bossLevelIndex = (gameState.bossLevelIndex + 1) % gameBossesData.length;
+                gameState.currentBossHp = gameBossesData[gameState.bossLevelIndex].hp;
+                gameState.bossExpiryTimestamp = Date.now() + (24 * 3600 * 1000);
+            } else {
+                alert(`Вы успешно атаковали босса и нанесли ${dealtDamage} ед. урона!`);
+            }
+
+            saveAndRefreshGameData();
+        }
+
+        function createNewClan() {
+            let clanName = document.getElementById('newClanNameInput').value.trim();
+            if (!clanName) { alert("Введите название клана!"); return; }
+            if (gameState.balance < 2500) { alert("Нужно 2 500 RICH!"); return; }
+
+            gameState.balance -= 2500;
+            gameState.userClanName = clanName;
+            gameState.isClanOwner = true;
+            gameState.clanMembers = ["Вы (Создатель)", "Боец_Альфа", "Титан_99"];
+            alert(`Клан «${clanName}» успешно создан!`);
+            saveAndRefreshGameData();
+        }
+
+        function leaveCurrentClan() {
+            if (confirm("Вы действительно хотите покинуть клан?")) {
+                gameState.userClanName = null;
+                gameState.isClanOwner = false;
+                gameState.clanMembers = [];
+                saveAndRefreshGameData();
+            }
+        }
+
+        function kickClanMember() {
+            let memberName = document.getElementById('memberNameToKick').value.trim();
+            if (!memberName) { alert("Введите имя участника!"); return; }
+            let index = gameState.clanMembers.indexOf(memberName);
+            if (index !== -1) {
+                gameState.clanMembers.splice(index, 1);
+                alert(`Участник ${memberName} удален из клана.`);
+                saveAndRefreshGameData();
+            } else {
+                alert("Участник с таким именем не найден.");
+            }
+        }
+
+        function renderShopWeaponsList() {
+            let container = document.getElementById('weaponsGridContainer');
+            container.innerHTML = '';
+            gameWeaponsData.forEach(weapon => {
+                let isBought = gameState.purchasedWeaponsIds.includes(weapon.id);
+                container.innerHTML += `
+                    <div class="list-item">
+                        <div class="item-details">
+                            <h4>${weapon.name}</h4>
+                            <p style="margin-bottom:0;">Сила: +${weapon.power} (+${weapon.power * 2} урона)</p>
+                            <span>Цена: ${weapon.price} RICH</span>
+                        </div>
+                        <button class="btn ${isBought ? '' : 'btn-red'}" style="width: auto; padding: 10px 16px; margin-top:0;" ${isBought ? 'disabled' : ''} onclick="buyWeaponItem(${weapon.id}, ${weapon.price}, ${weapon.power})">
+                            ${isBought ? 'Куплено' : 'Купить'}
+                        </button>
+                    </div>
+                `;
+            });
+        }
+
+        function buyWeaponItem(id, price, powerBonus) {
+            if (gameState.balance < price) { alert("Недостаточно RICH на балансе!"); return; }
+            gameState.balance -= price;
+            gameState.power += powerBonus;
+            gameState.purchasedWeaponsIds.push(id);
+            alert("Оружие успешно куплено!");
+            saveAndRefreshGameData();
+        }
+
+        function verifyTaskChannel() {
+            let gameName = document.getElementById('taskGameName').value.trim();
+            let walletAddr = document.getElementById('taskWalletAddr').value.trim();
+            if (!gameName || !walletAddr) {
+                alert("Заполните превью: название игры и адрес кошелька!");
+                return;
+            }
+            gameState.balance += 100;
+            alert("Подписка проверена! Награда +100 RICH зачислена.");
+            saveAndRefreshGameData();
+        }
+
+        function renderDynamicTasks() {
+            let container = document.getElementById('dynamicTasksContainer');
+            container.innerHTML = '';
+            gameState.customTasks.forEach((taskText, idx) => {
+                container.innerHTML += `
+                    <div style="background: var(--bg-deep); padding: 15px; border-radius: 12px; margin-top: 10px; border: 1px solid var(--border-color);">
+                        <h4 style="color: #fff; margin-bottom: 5px;">🎯 Задание #${idx + 1}</h4>
+                        <p style="font-size: 13px; margin-bottom: 10px;">${taskText}</p>
+                        <button class="btn btn-success" style="margin-top:0;" onclick="completeCustomTask(${idx})">Выполнить (+50 RICH)</button>
+                    </div>
+                `;
+            });
+        }
+
+        function completeCustomTask(idx) {
+            let gameName = document.getElementById('taskGameName').value.trim();
+            let walletAddr = document.getElementById('taskWalletAddr').value.trim();
+            if (!gameName || !walletAddr) {
+                alert("Заполните превью (имя и кошелек) вверху раздела!");
+                return;
+            }
+            gameState.balance += 50;
+            alert("Задание выполнено! Награда +50 RICH зачислена.");
+            saveAndRefreshGameData();
+        }
+
+        function copyReferralLink() {
+            let refInput = document.getElementById('refLinkInput');
+            refInput.select();
+            navigator.clipboard.writeText(refInput.value);
+            alert("Реферальная ссылка скопирована!");
+        }
+
+        function openWithdrawalModal() {
+            let amount = prompt("Введите сумму RICH для создания заявки на вывод:", "1000");
+            if (!amount) return;
+            let parsedAmount = parseInt(amount);
+            if (isNaN(parsedAmount) || parsedAmount <= 0) { alert("Введите корректную сумму!"); return; }
+            if (gameState.balance < parsedAmount) { alert("Недостаточно средств на балансе!"); return; }
+
+            let recipientWallet = prompt("Введите адрес получателя (кошелек):");
+            if (!recipientWallet) return;
+
+            gameState.balance -= parsedAmount;
+            gameState.withdrawalRequests.push({
+                id: Date.now(),
+                amount: parsedAmount,
+                wallet: recipientWallet,
+                status: 'В обработке'
+            });
+
+            alert("Заявка на вывод успешно создана и отправлена администратору!");
+            saveAndRefreshGameData();
+        }
+
+        function openManualTopUpModal() {
+            let msg = `Ручное пополнение баланса:\n\n1. Переведите средства на адрес кошелька:\n${MY_WALLET_ADDRESS}\n\n2. Обязательно укажите ваш ID (${ADMIN_TELEGRAM_ID}) в комментарии к переводу, чтобы админ зачислил баланс!`;
+            alert(msg);
+        }
+
+        function executeAdminBalanceOperation() {
+            let targetId = document.getElementById('admTargetId').value.trim();
+            let amount = parseInt(document.getElementById('admAmountInput').value);
+            if (!targetId || isNaN(amount)) { alert("Заполните ID и сумму правильно!"); return; }
+            
+            gameState.balance += amount;
+            alert(`Админ: баланс игрока [ID: ${targetId}] изменен на ${amount > 0 ? '+' : ''}${amount} RICH.`);
+            saveAndRefreshGameData();
+        }
+
+        function adminAddTask() {
+            let text = document.getElementById('admNewTaskText').value.trim();
+            if (!text) { alert("Введите текст задания!"); return; }
+            gameState.customTasks.push(text);
+            document.getElementById('admNewTaskText').value = '';
+            alert("Задание добавлено!");
+            saveAndRefreshGameData();
+        }
+
+        function adminRemoveTask() {
+            if (gameState.customTasks.length > 0) {
+                gameState.customTasks.pop();
+                alert("Последнее задание удалено.");
+                saveAndRefreshGameData();
+            } else {
+                alert("Нет пользовательских заданий.");
+            }
+        }
+
+        function renderAdminWithdrawals() {
+            let container = document.getElementById('adminWithdrawalsList');
+            if (gameState.withdrawalRequests.length === 0) {
+                container.innerHTML = '<p style="font-size:13px; color:#777;">Нет активных заявок на вывод.</p>';
+                return;
+            }
+            container.innerHTML = '';
+            gameState.withdrawalRequests.forEach((req, index) => {
+                container.innerHTML += `
+                    <div class="admin-withdrawal-item">
+                        <p style="margin-bottom:4px; color:#fff;"><strong>Сумма:</strong> ${req.amount} RICH</p>
+                        <p style="margin-bottom:4px;"><strong>Адрес:</strong> ${req.wallet}</p>
+                        <p style="margin-bottom:8px;"><strong>Статус:</strong> <span style="color:var(--gold);">${req.status}</span></p>
+                        <div class="badge-row">
+                            <button class="btn btn-success" style="margin-top:0; padding:8px;" onclick="adminProcessWithdrawal(${index}, 'Принято')">Принять</button>
+                            <button class="btn btn-red" style="margin-top:0; padding:8px;" onclick="adminProcessWithdrawal(${index}, 'Отклонено')">Отклонить</button>
+                        </div>
+                    </div>
+                `;
+            });
+        }
+
+        function adminProcessWithdrawal(index, statusText) {
+            let req = gameState.withdrawalRequests[index];
+            if (statusText === 'Отклонено') {
+                gameState.balance += req.amount; // возврат средств при отклонении
+            }
+            req.status = statusText;
+            alert(`Заявка отмечена как: ${statusText}`);
+            saveAndRefreshGameData();
+        }
+
+        setInterval(() => {
+            let differenceMs = gameState.bossExpiryTimestamp - Date.now();
+            if (differenceMs <= 0) {
+                document.getElementById('bossTimerDisplay').innerText = "Время вышло!";
+                return;
+            }
+            let h = Math.floor(differenceMs / 3600000);
+            let m = Math.floor((differenceMs % 3600000) / 60000);
+            let s = Math.floor((differenceMs % 60000) / 1000);
+            document.getElementById('bossTimerDisplay').innerText = `${h}ч ${m}м ${s}с`;
+        }, 1000);
+
+        renderUserInterface();
+    </script>
+</body>
+</html>
