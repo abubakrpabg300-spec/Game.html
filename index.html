@@ -1,0 +1,891 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>RICH GAME</title>
+    <script src="https://telegram.org/js/telegram-web-app.js"></script>
+    <style>
+        :root {
+            --bg-color: #0f111a;
+            --card-bg: #1a1d2d;
+            --accent: #f3ba2f;
+            --accent-hover: #e0a820;
+            --text-main: #ffffff;
+            --text-secondary: #94a3b8;
+            --danger: #ef4444;
+            --success: #22c55e;
+            --border: #2a2e43;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+            user-select: none;
+            -webkit-user-select: none;
+        }
+
+        body {
+            background-color: var(--bg-color);
+            color: var(--text-main);
+            display: flex;
+            flex-direction: column;
+            height: 100vh;
+            height: 100dvh;
+            overflow: hidden;
+        }
+
+        .app-container {
+            flex: 1;
+            overflow-y: auto;
+            padding: 16px;
+            padding-bottom: 90px;
+        }
+
+        .screen {
+            display: none;
+            animation: fadeIn 0.2s ease-in-out;
+        }
+
+        .screen.active {
+            display: block;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(4px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        /* Навигация (Нижнее меню) */
+        .nav-bar {
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            width: 100%;
+            height: 75px;
+            background-color: var(--card-bg);
+            border-top: 1px solid var(--border);
+            display: flex;
+            justify-content: space-around;
+            align-items: center;
+            z-index: 100;
+            padding-bottom: env(safe-area-inset-bottom);
+        }
+
+        .nav-item {
+            background: none;
+            border: none;
+            color: var(--text-secondary);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 4px;
+            flex: 1;
+            cursor: pointer;
+            font-size: 11px;
+            font-weight: 500;
+            transition: color 0.2s;
+        }
+
+        .nav-item svg {
+            width: 24px;
+            height: 24px;
+            fill: currentColor;
+        }
+
+        .nav-item.active {
+            color: var(--accent);
+        }
+
+        /* Общие компоненты */
+        .header-stats {
+            background: var(--card-bg);
+            border: 1px solid var(--border);
+            border-radius: 16px;
+            padding: 16px;
+            text-align: center;
+            margin-bottom: 20px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.2);
+        }
+
+        .balance-title {
+            font-size: 13px;
+            color: var(--text-secondary);
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            margin-bottom: 4px;
+        }
+
+        .balance-amount {
+            font-size: 32px;
+            font-weight: 800;
+            color: var(--accent);
+        }
+
+        .btn {
+            background: var(--accent);
+            color: #000;
+            border: none;
+            border-radius: 12px;
+            padding: 12px 20px;
+            font-size: 15px;
+            font-weight: 700;
+            cursor: pointer;
+            width: 100%;
+            transition: background 0.2s, transform 0.1s;
+            text-align: center;
+        }
+
+        .btn:active {
+            transform: scale(0.98);
+        }
+
+        .btn-secondary {
+            background: rgba(255,255,255,0.08);
+            color: var(--text-main);
+            border: 1px solid var(--border);
+        }
+
+        .btn-danger {
+            background: var(--danger);
+            color: #fff;
+        }
+
+        /* Экран 1: Главный (Кликер) */
+        .clicker-container {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            margin-top: 10px;
+        }
+
+        .clicker-target {
+            width: 220px;
+            height: 220px;
+            background: radial-gradient(circle, #2b304a 0%, var(--card-bg) 100%);
+            border: 4px solid var(--accent);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            box-shadow: 0 0 30px rgba(243, 186, 47, 0.2);
+            position: relative;
+            transition: transform 0.05s ease;
+            margin: 25px 0;
+        }
+
+        .clicker-target:active {
+            transform: scale(0.95);
+        }
+
+        .clicker-target img {
+            width: 110px;
+            height: 110px;
+            pointer-events: none;
+        }
+
+        .energy-box {
+            width: 100%;
+            background: var(--card-bg);
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            padding: 12px 16px;
+        }
+
+        .energy-info {
+            display: flex;
+            justify-content: space-between;
+            font-size: 13px;
+            margin-bottom: 8px;
+            color: var(--text-secondary);
+        }
+
+        .energy-bar-bg {
+            width: 100%;
+            height: 8px;
+            background: rgba(255,255,255,0.05);
+            border-radius: 4px;
+            overflow: hidden;
+        }
+
+        .energy-bar-fill {
+            height: 100%;
+            background: var(--accent);
+            width: 100%;
+            transition: width 0.3s;
+        }
+
+        .floating-text {
+            position: absolute;
+            font-weight: 800;
+            font-size: 22px;
+            color: var(--accent);
+            animation: floatUp 0.8s ease-out forwards;
+            pointer-events: none;
+        }
+
+        @keyframes floatUp {
+            0% { opacity: 1; transform: translateY(0) scale(1); }
+            100% { opacity: 0; transform: translateY(-70px) scale(1.3); }
+        }
+
+        /* Экран 2: Магазин */
+        .cards-grid {
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+        }
+
+        .shop-card {
+            background: var(--card-bg);
+            border: 1px solid var(--border);
+            border-radius: 16px;
+            padding: 16px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .shop-card-info h3 {
+            font-size: 16px;
+            margin-bottom: 4px;
+        }
+
+        .shop-card-info p {
+            font-size: 12px;
+            color: var(--text-secondary);
+            margin-bottom: 2px;
+        }
+
+        .shop-card-price {
+            font-weight: 700;
+            color: var(--accent);
+            font-size: 15px;
+            margin-bottom: 8px;
+            text-align: right;
+        }
+
+        .shop-btn {
+            padding: 8px 16px;
+            font-size: 13px;
+            width: auto;
+        }
+
+        /* Экран 3: Задания */
+        .task-item {
+            background: var(--card-bg);
+            border: 1px solid var(--border);
+            border-radius: 16px;
+            padding: 16px;
+            margin-bottom: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+
+        .task-info h4 {
+            font-size: 15px;
+            margin-bottom: 4px;
+        }
+
+        .task-info p {
+            font-size: 12px;
+            color: var(--accent);
+        }
+
+        .task-btn {
+            padding: 8px 14px;
+            font-size: 13px;
+            width: auto;
+        }
+
+        /* Экран 4: Друзья */
+        .ref-box {
+            background: var(--card-bg);
+            border: 1px solid var(--border);
+            border-radius: 16px;
+            padding: 20px;
+            text-align: center;
+            margin-bottom: 16px;
+        }
+
+        .ref-link-input {
+            width: 100%;
+            background: rgba(0,0,0,0.2);
+            border: 1px solid var(--border);
+            border-radius: 10px;
+            padding: 10px;
+            color: var(--text-secondary);
+            font-size: 12px;
+            margin: 12px 0;
+            text-align: center;
+            outline: none;
+        }
+
+        /* Экран 5: Профиль */
+        .profile-section {
+            background: var(--card-bg);
+            border: 1px solid var(--border);
+            border-radius: 16px;
+            padding: 16px;
+            margin-bottom: 16px;
+        }
+
+        .profile-row {
+            display: flex;
+            justify-content: space-between;
+            font-size: 14px;
+            padding: 8px 0;
+            border-bottom: 1px solid rgba(255,255,255,0.03);
+        }
+
+        .profile-row:last-child {
+            border-bottom: none;
+        }
+
+        .profile-row span:last-child {
+            color: var(--accent);
+            font-weight: 600;
+        }
+
+        .wallet-actions {
+            display: flex;
+            gap: 10px;
+            margin-top: 12px;
+        }
+
+        /* Админ-панель */
+        .admin-panel {
+            background: rgba(239, 68, 68, 0.05);
+            border: 1px dashed var(--danger);
+            border-radius: 16px;
+            padding: 16px;
+            margin-top: 20px;
+            display: none;
+        }
+
+        .admin-panel.visible {
+            display: block;
+        }
+
+        .admin-title {
+            color: var(--danger);
+            font-size: 15px;
+            font-weight: 700;
+            margin-bottom: 12px;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .admin-input {
+            width: 100%;
+            background: var(--card-bg);
+            border: 1px solid var(--border);
+            border-radius: 10px;
+            padding: 10px;
+            color: var(--text-main);
+            font-size: 13px;
+            margin-bottom: 8px;
+            outline: none;
+        }
+
+        .admin-row {
+            display: flex;
+            gap: 8px;
+            margin-bottom: 8px;
+        }
+
+        /* Модальные окна */
+        .modal {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0,0,0,0.7);
+            display: none;
+            justify-content: center;
+            align-items: center;
+            z-index: 1000;
+            padding: 16px;
+        }
+
+        .modal.active {
+            display: flex;
+        }
+
+        .modal-content {
+            background: var(--card-bg);
+            border: 1px solid var(--border);
+            border-radius: 20px;
+            padding: 20px;
+            width: 100%;
+            max-width: 340px;
+            text-align: center;
+        }
+
+        .modal-content h3 {
+            margin-bottom: 12px;
+            font-size: 18px;
+        }
+
+        .modal-content p {
+            font-size: 13px;
+            color: var(--text-secondary);
+            margin-bottom: 16px;
+        }
+    </style>
+</head>
+<body>
+
+    <div class="app-container">
+        <!-- 1. ЭКРАН КЛИКЕРА -->
+        <div id="screen-clicker" class="screen active">
+            <div class="header-stats">
+                <div class="balance-title">Баланс Rich Coin</div>
+                <div class="balance-amount" id="main-balance">0.00</div>
+                <div style="font-size: 12px; color: var(--text-secondary); margin-top: 4px;">Доход пассивный: <span id="passive-income-rate">0</span> Rich/час</div>
+            </div>
+
+            <div class="clicker-container">
+                <div class="clicker-target" id="click-btn">
+                    <svg viewBox="0 0 24 24" width="90" height="90" fill="#f3ba2f"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15h-2v-2h2v2zm0-4h-2V7h2v6z"/></svg>
+                </div>
+            </div>
+
+            <div class="energy-box">
+                <div class="energy-info">
+                    <span>⚡ Энергия</span>
+                    <span><span id="energy-current">1000</span> / 1000</span>
+                </div>
+                <div class="energy-bar-bg">
+                    <div class="energy-bar-fill" id="energy-bar"></div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 2. ЭКРАН МАГАЗИНА -->
+        <div id="screen-shop" class="screen">
+            <div class="header-stats">
+                <div class="balance-title">Магазин пассива</div>
+                <div style="font-size: 13px; color: var(--text-secondary);">Окупаемость: 30 дней | Срок: 40 дней</div>
+            </div>
+            <div class="cards-grid" id="shop-cards-list">
+                <!-- Карточки генерируются скриптом -->
+            </div>
+        </div>
+
+        <!-- 3. ЭКРАН ЗАДАНИЙ -->
+        <div id="screen-tasks" class="screen">
+            <div class="header-stats">
+                <div class="balance-title">Задания</div>
+                <div style="font-size: 13px; color: var(--text-secondary);">Выполняй задания и получай Rich Coin</div>
+            </div>
+            <div id="tasks-list">
+                <!-- Задания генерируются скриптом -->
+            </div>
+        </div>
+
+        <!-- 4. ЭКРАН ДРУЗЕЙ -->
+        <div id="screen-friends" class="screen">
+            <div class="header-stats">
+                <div class="balance-title">Реферальная программа</div>
+                <div style="font-size: 13px; color: var(--text-secondary);">Получай 2.5% от пополнений друзей!</div>
+            </div>
+            
+            <div class="ref-box">
+                <h3 style="margin-bottom: 8px;">Твоя реферальная ссылка</h3>
+                <input type="text" class="ref-link-input" id="ref-link-input" readonly>
+                <button class="btn" id="copy-ref-btn">📋 Скопировать ссылку</button>
+            </div>
+
+            <div class="profile-section">
+                <div class="profile-row">
+                    <span>Приглашено друзей:</span>
+                    <span id="ref-count">0</span>
+                </div>
+                <div class="profile-row">
+                    <span>Заработано с рефералов:</span>
+                    <span id="ref-earned">0.00 Rich</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- 5. ЭКРАН ПРОФИЛЯ -->
+        <div id="screen-profile" class="screen">
+            <div class="header-stats">
+                <div class="balance-title">Профиль игрока</div>
+                <div class="balance-amount" id="profile-balance">0.00 Rich</div>
+            </div>
+
+            <div class="profile-section">
+                <div class="profile-row">
+                    <span>Имя:</span>
+                    <span id="user-name">Игрок</span>
+                </div>
+                <div class="profile-row">
+                    <span>Telegram ID:</span>
+                    <span id="user-id">8684827145</span>
+                </div>
+                <div class="profile-row">
+                    <span>Курс пополнения:</span>
+                    <span>1 TON = 5,000 Rich</span>
+                </div>
+                <div class="profile-row">
+                    <span>Комиссия на вывод:</span>
+                    <span>10%</span>
+                </div>
+            </div>
+
+            <div class="wallet-actions">
+                <button class="btn" id="deposit-btn">💳 Пополнить (от 1 TON)</button>
+                <button class="btn btn-secondary" id="withdraw-btn">📤 Вывод (от 1000 Rich)</button>
+            </div>
+
+            <!-- СКРЫТАЯ АДМИН-ПАНЕЛЬ (Видна только для ID 8684827145) -->
+            <div id="admin-panel" class="admin-panel">
+                <div class="admin-title">
+                    <svg width="16" height="16" fill="currentColor" viewBox="0 0 24 24"><path d="M12 1L3 5v6c0 5.55 3.84 10.74 9 12 5.16-1.26 9-6.45 9-12V5l-9-4zm0 10.99h7c-.53 4.12-3.28 7.79-7 8.94V12H5V6.3l7-3.11v8.8z"/></svg>
+                    Админ-панель (Доступ разрешен)
+                </div>
+                
+                <div style="font-size: 12px; color: var(--text-secondary); margin-bottom: 8px;">Управление балансом игрока по ID:</div>
+                <input type="text" id="admin-target-id" class="admin-input" placeholder="Введите Telegram ID (например: 8684827145)">
+                <input type="number" id="admin-amount-input" class="admin-input" placeholder="Сумма Rich Coin">
+                <div class="admin-row">
+                    <button class="btn" id="admin-add-btn" style="background: var(--success); color: #fff;">+ Начислить</button>
+                    <button class="btn btn-danger" id="admin-sub-btn">- Снять</button>
+                </div>
+
+                <hr style="border: 0; border-top: 1px solid var(--border); margin: 12px 0;">
+
+                <div style="font-size: 12px; color: var(--text-secondary); margin-bottom: 8px;">Создать задание:</div>
+                <input type="text" id="admin-task-title" class="admin-input" placeholder="Название (например: Подпишись на канал)">
+                <input type="text" id="admin-task-url" class="admin-input" placeholder="Ссылка (например: https://t.me/channel)">
+                <input type="number" id="admin-task-reward" class="admin-input" placeholder="Награда в Rich Coin">
+                <button class="btn" id="admin-create-task-btn">🚀 Опубликовать задание</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- НИЖНЕЕ МЕНЮ НАВИГАЦИИ -->
+    <nav class="nav-bar">
+        <button class="nav-item active" onclick="switchScreen('clicker', this)">
+            <svg viewBox="0 0 24 24"><path d="M10 20v-6h4v6h5v-8h3L12 3 2 12h3v8z"/></svg>
+            Главный
+        </button>
+        <button class="nav-item" onclick="switchScreen('shop', this)">
+            <svg viewBox="0 0 24 24"><path d="M7 18c-1.1 0-1.99.9-1.99 2S5.9 22 7 22s2-.9 2-2-.9-2-2-2zM1 2v2h2l3.6 7.59-1.35 2.45c-.16.28-.25.61-.25.96 0 1.1.9 2 2 2h12v-2H7.42c-.14 0-.25-.11-.25-.25l.03-.12.9-1.63h7.45c.75 0 1.41-.41 1.75-1.03l3.58-6.49c.08-.14.12-.31.12-.48 0-.55-.45-1-1-1H5.21l-.94-2H1zm16 16c-1.1 0-1.99.9-1.99 2s.89 2 1.99 2 2-.9 2-2-.9-2-2-2z"/></svg>
+            Магазин
+        </button>
+        <button class="nav-item" onclick="switchScreen('tasks', this)">
+            <svg viewBox="0 0 24 24"><path d="M19 3H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm-9 14l-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z"/></svg>
+            Задания
+        </button>
+        <button class="nav-item" onclick="switchScreen('friends', this)">
+            <svg viewBox="0 0 24 24"><path d="M16 11c1.66 0 2.99-1.34 2.99-3S17.66 5 16 5c-1.66 0-3 1.34-3 3s1.34 3 3 3zm-8 0c1.66 0 2.99-1.34 2.99-3S9.66 5 8 5C6.34 5 5 6.34 5 8s1.34 3 3 3zm0 2c-2.33 0-7 1.17-7 3.5V19h14v-2.5c0-2.33-4.67-3.5-7-3.5zm8 0c-.29 0-.62.02-.97.05 1.16.84 1.97 1.97 1.97 3.45V19h6v-2.5c0-2.33-4.67-3.5-7-3.5z"/></svg>
+            Друзья
+        </button>
+        <button class="nav-item" onclick="switchScreen('profile', this)">
+            <svg viewBox="0 0 24 24"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 3c1.66 0 3 1.34 3 3s-1.34 3-3 3-3-1.34-3-3 1.34-3 3-3zm0 14.2c-2.5 0-4.71-1.28-6-3.22.03-1.99 4-3.08 6-3.08 1.99 0 5.97 1.09 6 3.08-1.29 1.94-3.5 3.22-6 3.22z"/></svg>
+            Профиль
+        </button>
+    </nav>
+
+    <!-- МОДАЛЬНЫЕ ОКНА -->
+    <div id="modal" class="modal">
+        <div class="modal-content">
+            <h3 id="modal-title">Сообщение</h3>
+            <p id="modal-text">Текст сообщения</p>
+            <button class="btn" onclick="closeModal()">ОК</button>
+        </div>
+    </div>
+
+    <script>
+        // Инициализация Telegram WebApp
+        let tg = window.Telegram.WebApp;
+        tg.expand();
+
+        // Данные игрока
+        let user = {
+            id: 8684827145, // Твой ID по умолчанию для доступа к админке
+            name: "Игрок",
+            balance: 0,
+            energy: 1000,
+            maxEnergy: 1000,
+            passiveIncomePerHour: 0,
+            refCount: 0,
+            refEarned: 0,
+            cards: [],
+            completedTasks: []
+        };
+
+        // Загрузка данных из localStorage при наличии
+        const savedData = localStorage.getItem('rich_game_user');
+        if (savedData) {
+            try {
+                user = JSON.parse(savedData);
+            } catch(e) {}
+        }
+
+        // Синхронизация с реальным Telegram профилем, если открыто внутри бота
+        if (tg.initDataUnsafe && tg.initDataUnsafe.user) {
+            user.id = tg.initDataUnsafe.user.id || user.id;
+            user.name = tg.initDataUnsafe.user.first_name || "Игрок";
+        }
+
+        // Каталог карточек (окупаемость 30 дней, срок 40 дней)
+        const shopCardsData = [
+            { id: 1, name: "☕ Кофейный ларек", price: 2500, incomePerHour: 3.47 },
+            { id: 2, name: "🍔 Сеть фастфуда", price: 7500, incomePerHour: 10.41 },
+            { id: 3, name: "💻 IT-Стартап", price: 20000, incomePerHour: 27.77 },
+            { id: 4, name: "🏢 Бизнес-центр", price: 50000, incomePerHour: 69.44 },
+            { id: 5, name: "🚀 Крипто-фонд", price: 100000, incomePerHour: 138.88 }
+        ];
+
+        // Список заданий по умолчанию
+        let tasksData = [
+            { id: 1, title: "Подписаться на канал @Richgame11_bot", url: "https://t.me/Richgame11_bot", reward: 250 },
+            { id: 2, title: "Пригласить 1 друга в игру", url: "#", reward: 500 }
+        ];
+
+        // Сохранение данных
+        function saveData() {
+            localStorage.setItem('rich_game_user', JSON.stringify(user));
+            updateUI();
+        }
+
+        // Переключение экранов
+        function switchScreen(screenId, element) {
+            document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+            document.querySelectorAll('.nav-item').forEach(i => i.classList.remove('active'));
+            
+            document.getElementById('screen-' + screenId).classList.add('active');
+            if (element) element.classList.add('active');
+
+            if (screenId === 'shop') renderShop();
+            if (screenId === 'tasks') renderTasks();
+            if (screenId === 'friends') initFriends();
+            if (screenId === 'profile') initProfile();
+        }
+
+        // Клик по монете
+        const clickBtn = document.getElementById('click-btn');
+        clickBtn.addEventListener('click', function(e) {
+            if (user.energy >= 1) {
+                user.energy -= 1;
+                user.balance += 0.05;
+
+                // Визуальный эффект всплывающей цифры (+0.05)
+                let rect = clickBtn.getBoundingClientRect();
+                let x = e.clientX - rect.left;
+                let y = e.clientY - rect.top;
+                
+                let floatEl = document.createElement('div');
+                floatEl.className = 'floating-text';
+                floatEl.innerText = '+0.05';
+                floatEl.style.left = x + 'px';
+                floatEl.style.top = y + 'px';
+                clickBtn.appendChild(floatEl);
+                setTimeout(() => floatEl.remove(), 800);
+
+                saveData();
+            }
+        });
+
+        // Восстановление энергии и пассивный доход (каждую секунду)
+        setInterval(() => {
+            // Энергия (полное восстановление за 24 часа = ~1.15 энергии в секунду)
+            if (user.energy < user.maxEnergy) {
+                user.energy = Math.min(user.maxEnergy, user.energy + 0.012);
+            }
+            // Пассивный доход в секунду
+            if (user.passiveIncomePerHour > 0) {
+                user.balance += (user.passiveIncomePerHour / 3600);
+            }
+            updateUI();
+        }, 1000);
+
+        // Рендер магазина карточек
+        function renderShop() {
+            let container = document.getElementById('shop-cards-list');
+            container.innerHTML = '';
+            shopCardsData.forEach(card => {
+                container.innerHTML += `
+                    <div class="shop-card">
+                        <div class="shop-card-info">
+                            <h3>${card.name}</h3>
+                            <p>Доход: +${card.incomePerHour} Rich/час</p>
+                        </div>
+                        <div>
+                            <div class="shop-card-price">${card.price} Rich</div>
+                            <button class="btn shop-btn" onclick="buyCard(${card.id})">Купить</button>
+                        </div>
+                    </div>
+                `;
+            });
+        }
+
+        function buyCard(cardId) {
+            let card = shopCardsData.find(c => c.id === cardId);
+            if (user.balance >= card.price) {
+                user.balance -= card.price;
+                user.passiveIncomePerHour += card.incomePerHour;
+                user.cards.push(card);
+                saveData();
+                showModal("Успешно!", `Вы приобрели карточку "${card.name}". Теперь она приносит пассивный доход!`);
+            } else {
+                showModal("Ошибка", "Недостаточно Rich Coin на балансе.");
+            }
+        }
+
+        // Рендер заданий
+        function renderTasks() {
+            let container = document.getElementById('tasks-list');
+            container.innerHTML = '';
+            tasksData.forEach(task => {
+                let isCompleted = user.completedTasks.includes(task.id);
+                container.innerHTML += `
+                    <div class="task-item">
+                        <div class="task-info">
+                            <h4>${task.title}</h4>
+                            <p>Награда: +${task.reward} Rich Coin</p>
+                        </div>
+                        <button class="btn task-btn" ${isCompleted ? 'disabled style="background:var(--border);color:var(--text-secondary);"' : `onclick="completeTask(${task.id})"`}>
+                            ${isCompleted ? 'Выполнено' : 'Выполнить'}
+                        </button>
+                    </div>
+                `;
+            });
+        }
+
+        function completeTask(taskId) {
+            let task = tasksData.find(t => t.id === taskId);
+            if (task && !user.completedTasks.includes(taskId)) {
+                user.completedTasks.push(taskId);
+                user.balance += task.reward;
+                saveData();
+                renderTasks();
+                showModal("Награда получена!", `Вам начислено +${task.reward} Rich Coin!`);
+            }
+        }
+
+        // Друзья и реф. ссылка
+        function initFriends() {
+            let refLink = `https://t.me/Richgame11_bot?start=r_${user.id}`;
+            document.getElementById('ref-link-input').value = refLink;
+            document.getElementById('ref-count').innerText = user.refCount;
+            document.getElementById('ref-earned').innerText = user.refEarned.toFixed(2) + " Rich";
+        }
+
+        document.getElementById('copy-ref-btn').addEventListener('click', function() {
+            let input = document.getElementById('ref-link-input');
+            input.select();
+            navigator.clipboard.writeText(input.value);
+            showModal("Скопировано", "Реферальная ссылка скопирована в буфер обмена!");
+        });
+
+        // Профиль и админ-панель
+        function initProfile() {
+            document.getElementById('profile-balance').innerText = user.balance.toFixed(2) + " Rich";
+            document.getElementById('user-name').innerText = user.name;
+            document.getElementById('user-id').innerText = user.id;
+
+            // Проверка на админа по ID (8684827145)
+            if (Number(user.id) === 8684827145) {
+                document.getElementById('admin-panel').classList.add('visible');
+            }
+        }
+
+        document.getElementById('deposit-btn').addEventListener('click', function() {
+            showModal("Пополнение", "Минимальная сумма пополнения: 1 TON. Курс: 1 TON = 5,000 Rich Coin. Интеграция с TON Connect активна.");
+        });
+
+        document.getElementById('withdraw-btn').addEventListener('click', function() {
+            if (user.balance >= 1000) {
+                showModal("Вывод средств", "Заявка на вывод создана. Минималка от 1000 Rich, комиссия составляет 10%. Ожидайте перевода на кошелек.");
+            } else {
+                showModal("Ошибка", "Минимальная сумма для вывода составляет 1,000 Rich Coin.");
+            }
+        });
+
+        // Логика админ-панели (начисление/списание и добавление заданий)
+        document.getElementById('admin-add-btn').addEventListener('click', function() {
+            let targetId = document.getElementById('admin-target-id').value;
+            let amount = Number(document.getElementById('admin-amount-input').value);
+            if (targetId && amount > 0) {
+                if (Number(targetId) === Number(user.id)) {
+                    user.balance += amount;
+                    saveData();
+                }
+                showModal("Админ-панель", `Игроку с ID ${targetId} успешно начислено +${amount} Rich.`);
+            } else {
+                showModal("Ошибка", "Введите корректный ID и сумму.");
+            }
+        });
+
+        document.getElementById('admin-sub-btn').addEventListener('click', function() {
+            let targetId = document.getElementById('admin-target-id').value;
+            let amount = Number(document.getElementById('admin-amount-input').value);
+            if (targetId && amount > 0) {
+                if (Number(targetId) === Number(user.id)) {
+                    user.balance = Math.max(0, user.balance - amount);
+                    saveData();
+                }
+                showModal("Админ-панель", `У игрока с ID ${targetId} списано ${amount} Rich.`);
+            } else {
+                showModal("Ошибка", "Введите корректный ID и сумму.");
+            }
+        });
+
+        document.getElementById('admin-create-task-btn').addEventListener('click', function() {
+            let title = document.getElementById('admin-task-title').value;
+            let url = document.getElementById('admin-task-url').value;
+            let reward = Number(document.getElementById('admin-task-reward').value);
+
+            if (title && url && reward > 0) {
+                let newTask = { id: tasksData.length + 1, title, url, reward };
+                tasksData.push(newTask);
+                showModal("Успешно", "Новое задание успешно создано и опубликовано для всех игроков!");
+                document.getElementById('admin-task-title').value = '';
+                document.getElementById('admin-task-url').value = '';
+                document.getElementById('admin-task-reward').value = '';
+            } else {
+                showModal("Ошибка", "Заполните все поля для создания задания.");
+            }
+        });
+
+        // Общие функции интерфейса
+        function updateUI() {
+            document.getElementById('main-balance').innerText = user.balance.toFixed(2);
+            document.getElementById('passive-income-rate').innerText = user.passiveIncomePerHour.toFixed(2);
+            document.getElementById('energy-current').innerText = Math.floor(user.energy);
+            
+            let energyPercent = (user.energy / user.maxEnergy) * 100;
+            document.getElementById('energy-bar').style.width = energyPercent + '%';
+
+            if (document.getElementById('screen-profile').classList.contains('active')) {
+                document.getElementById('profile-balance').innerText = user.balance.toFixed(2) + " Rich";
+            }
+        }
+
+        function showModal(title, text) {
+            document.getElementById('modal-title').innerText = title;
+            document.getElementById('modal-text').innerText = text;
+            document.getElementById('modal').classList.add('active');
+        }
+
+        function closeModal() {
+            document.getElementById('modal').classList.remove('active');
+        }
+
+        // Первичный запуск отрисовки
+        updateUI();
+    </script>
+</body>
+</html>
